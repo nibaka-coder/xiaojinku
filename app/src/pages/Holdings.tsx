@@ -1,0 +1,240 @@
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useStore } from '@/store/useStore'
+import { investSummary, deriveHolding, deriveLots } from '@/lib/calc'
+import { fmtMoney } from '@/lib/money'
+import type { Market, Security } from '@/types'
+import Modal from '@/components/Modal'
+
+const MARKET_LABEL: Record<Market, string> = { ashare: 'A股', us: '美股', hk: '港股', etf: 'ETF' }
+
+// 红涨绿跌（仅投资模块）
+function colorOf(v: number): string {
+  return v >= 0 ? 'var(--expense)' : 'var(--income)'
+}
+function sign(v: number): string {
+  return v >= 0 ? '+' : ''
+}
+
+// 行情更新时间（展示最新一只证券的行情时间，避免把旧价当实时价）
+function quoteAgeText(iso?: string): string {
+  if (!iso) return '尚未获取行情'
+  const d = new Date(iso)
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000)
+  if (mins < 1) return '行情更新于 刚刚'
+  if (mins < 60) return `行情更新于 ${mins} 分钟前`
+  if (mins < 60 * 24) return `行情更新于 ${Math.floor(mins / 60)} 小时前`
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `行情更新于 ${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+export default function Holdings() {
+  const navigate = useNavigate()
+  const securities = useStore((s) => s.securities)
+  const investTxns = useStore((s) => s.investTxns)
+  const fxRate = useStore((s) => s.settings.fxRate.rate)
+  const hkdRate = useStore((s) => s.settings.hkdRate.rate)
+  const refreshQuotes = useStore((s) => s.refreshQuotes)
+  const deleteSecurity = useStore((s) => s.deleteSecurity)
+  const [refreshing, setRefreshing] = useState(false)
+  const [manageSec, setManageSec] = useState<Security | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  const summary = useMemo(
+    () => investSummary(securities, investTxns, fxRate, hkdRate),
+    [securities, investTxns, fxRate, hkdRate]
+  )
+  const realized = useMemo(
+    () => deriveLots(securities, investTxns, fxRate, hkdRate).totalRealizedCNY,
+    [securities, investTxns, fxRate, hkdRate]
+  )
+  const holdings = useMemo(
+    () =>
+      securities
+        .map((s) => deriveHolding(s, investTxns, fxRate, hkdRate))
+        .sort((a, b) => b.marketValueCNY - a.marketValueCNY),
+    [securities, investTxns, fxRate, hkdRate]
+  )
+
+  // 最新行情时间 = 各证券 quoteUpdatedAt 中最新的一条
+  const latestQuoteAt = useMemo(() => {
+    const times = securities
+      .map((s) => s.quoteUpdatedAt)
+      .filter((v): v is string => !!v)
+      .sort()
+    return times.length ? times[times.length - 1] : undefined
+  }, [securities])
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await refreshQuotes(true)
+    setRefreshing(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-main">持仓总览</h1>
+          <div className="text-xs text-faint mt-0.5">{quoteAgeText(latestQuoteAt)}</div>
+        </div>
+        <button className="btn-ghost text-sm" onClick={onRefresh} disabled={refreshing}>
+          {refreshing ? '刷新中…' : '↻ 刷新行情'}
+        </button>
+      </div>
+
+      {/* 汇总 */}
+      <section className="card">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div className="text-xs text-faint">持仓市值</div>
+            <div className="font-semibold">{fmtMoney(summary.marketCNY, 'CNY')}</div>
+          </div>
+          <div>
+            <div className="text-xs text-faint">总投入</div>
+            <div className="font-semibold text-sub">{fmtMoney(summary.costCNY, 'CNY')}</div>
+          </div>
+          <div>
+            <div className="text-xs text-faint">累计盈亏</div>
+            <div className="font-semibold" style={{ color: colorOf(summary.profitCNY) }}>
+              {sign(summary.profitCNY)}
+              {fmtMoney(summary.profitCNY, 'CNY')}
+            </div>
+            <div className="text-xs" style={{ color: colorOf(summary.profitCNY) }}>
+              {sign(summary.profitPct)}
+              {Math.round(summary.profitPct)}%
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 累计已实现盈亏（已卖出部分相对买入成本） */}
+      <section className="card flex items-center justify-between">
+        <span className="text-sm text-sub">累计已实现盈亏</span>
+        <span className="font-semibold" style={{ color: colorOf(realized) }}>
+          {sign(realized)}
+          {fmtMoney(realized, 'CNY')}
+        </span>
+      </section>
+
+      {/* 列表 */}
+      {holdings.length === 0 ? (
+        <div className="card text-center py-12">
+          <div className="text-4xl mb-2">📈</div>
+          <p className="text-sub">暂无持仓</p>
+          <button className="btn-primary mt-4" onClick={() => navigate('/invest/add')}>
+            去添加证券
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {holdings.map((h) => (
+            <div key={h.security.id} className="card-2 w-full text-left">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-main truncate">
+                    {h.security.name || h.security.code}
+                    <span className="text-xs text-faint ml-1.5">{h.security.code}</span>
+                  </div>
+                  <div className="text-xs text-faint">
+                    {MARKET_LABEL[h.security.market]} · {h.shares} 股 · 成本{' '}
+                    {fmtMoney(h.avgCost, h.security.currency)}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="font-semibold">{fmtMoney(h.marketValueCNY, 'CNY')}</div>
+                  <div className="text-xs" style={{ color: colorOf(h.profitCNY) }}>
+                    {sign(h.profitCNY)}
+                    {fmtMoney(h.profitCNY, 'CNY')}（{sign(h.profitPct)}
+                    {Math.round(h.profitPct)}%）
+                  </div>
+                </div>
+                <button
+                  className="text-faint text-lg px-1 shrink-0"
+                  onClick={() => setManageSec(h.security)}
+                  aria-label="管理证券"
+                >
+                  ⋯
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button className="btn-primary w-full h-12" onClick={() => navigate('/invest/add')}>
+        ＋ 记一笔投资
+      </button>
+
+      {/* 证券管理（删除等） */}
+      <Modal
+        open={!!manageSec}
+        title="证券管理"
+        onClose={() => {
+          setManageSec(null)
+          setConfirmingDelete(false)
+        }}
+        footer={
+          confirmingDelete ? (
+            <>
+              <button
+                className="btn-ghost flex-1"
+                onClick={() => setConfirmingDelete(false)}
+              >
+                再想想
+              </button>
+              <button
+                className="btn-danger flex-1"
+                onClick={() => {
+                  if (manageSec) {
+                    deleteSecurity(manageSec.id)
+                    setManageSec(null)
+                    setConfirmingDelete(false)
+                  }
+                }}
+              >
+                确认删除
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="btn-ghost flex-1"
+                onClick={() => {
+                  setManageSec(null)
+                  setConfirmingDelete(false)
+                }}
+              >
+                取消
+              </button>
+              <button className="btn-danger flex-1" onClick={() => setConfirmingDelete(true)}>
+                删除该证券
+              </button>
+            </>
+          )
+        }
+      >
+        {manageSec && (
+          <div className="space-y-2 text-sub">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-main">{manageSec.name}</span>
+              <span className="text-xs text-faint">{manageSec.code}</span>
+            </div>
+            <div className="text-xs text-faint">
+              {MARKET_LABEL[manageSec.market]} · {manageSec.currency} ·{' '}
+              {investTxns.filter((t) => t.security_id === manageSec.id).length} 笔交易
+            </div>
+            {confirmingDelete && (
+              <div
+                className="mt-2 rounded-lg p-3 text-sm"
+                style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)' }}
+              >
+                ⚠️ 确认删除「{manageSec.name}」吗？该证券及其全部交易将永久删除，不可撤销。
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+    </div>
+  )
+}

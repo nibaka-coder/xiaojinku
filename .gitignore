@@ -1,0 +1,17 @@
+# 依赖（200MB+，绝不入库）
+node_modules/
+
+# 构建中间产物
+*.tsbuildinfo
+.vite/
+
+# WorkBuddy 项目元数据与本地记忆（含隐私，不公开）
+.workbuddy/
+
+# 服务器同步接口的数据与令牌（重要：不要把真实令牌传上去）
+deploy/data/
+token.txt
+
+# 系统文件
+.DS_Store
+Thumbs.db
