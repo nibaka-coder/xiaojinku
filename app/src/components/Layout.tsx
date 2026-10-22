@@ -140,7 +140,7 @@ export default function Layout() {
           </button>
         </header>
 
-        <main className="flex-1 px-4 pb-28 md:pb-10 pt-4 md:px-8 md:pt-6 w-full">
+        <main className="flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-10 pt-4 md:px-8 md:pt-6 w-full">
           <div className="max-w-3xl mx-auto w-full">
             {/* 移动端：日常开销 / 投资管理 分段切换 */}
             {inDaily && (
@@ -179,7 +179,10 @@ export default function Layout() {
       </div>
 
       {/* 移动端底部 Tab */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-glass backdrop-blur-xl border-t border-soft">
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-glass backdrop-blur-xl border-t border-soft"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="flex items-stretch justify-around h-16">
           {NAV.filter((n) => n.single === true || n.label === '日常开销' || n.label === '投资管理').map(
             (item) => {

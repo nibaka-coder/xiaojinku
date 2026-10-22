@@ -1,6 +1,3 @@
 node_modules
-# 构建产物默认忽略，但单文件成品 HTML 是发布物，需要入库
-dist/*
-!dist/xiaojinku-v2.19.html
 .DS_Store
 *.local

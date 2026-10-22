@@ -2,7 +2,7 @@
 
 一个本地优先的个人财务 Web 应用。记账、负债、净资产、投资持仓与已实现盈亏，全部数据存在你自己的浏览器里，不上传任何服务器。
 
-产物是一个**单文件 HTML**（`app/dist/xiaojinku-v2.19.html`），双击即可使用，不需要安装、不需要后端。
+产物位于 `app/dist/`：`index.html`（应用本体）+ `manifest.webmanifest` + `sw.js` + `icons/`。构建完成后即可作为 **PWA** 部署——安卓可直接「安装」，iPhone 可从主屏全屏打开并豁免 Safari 的 7 天数据清理策略，断网也能打开页面。
 
 ## 功能
 
@@ -23,7 +23,7 @@
 cd app
 npm install
 npm run dev     # 开发
-npm run build   # 构建，产出单文件 dist/index.html
+npm run build   # 构建，产出 dist/（index.html + PWA 三件套 + 图标）
 ```
 
 技术栈：Vite + React 18 + TypeScript + Tailwind CSS + Zustand（persist 到 IndexedDB）+ ECharts。
@@ -55,8 +55,10 @@ npm run build   # 构建，产出单文件 dist/index.html
 ```
 app/
   src/            源码
+  public/         PWA 资源（manifest.webmanifest、sw.js、图标）
+  tools/          图标生成脚本（纯标准库，python tools/generate_icons.py）
   deploy/         自建同步服务端（api.php + 部署说明）
-  dist/           构建产物（单文件 HTML）
+  dist/           构建产物（index.html + PWA 文件，随仓库发布，服务器 git pull 即得）
   verify_*.mjs    无头浏览器回归测试脚本
 design/           界面与功能设计文档
 ```

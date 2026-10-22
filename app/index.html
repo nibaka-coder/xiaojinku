@@ -2,12 +2,45 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#5fa896" />
+    <meta name="description" content="个人财务应用：日常开销、投资管理、净资产走势" />
     <title>小金库</title>
+
+    <!-- PWA：让安卓可安装、iOS 可从主屏全屏打开 -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="小金库" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // ① 申请持久化存储：磁盘紧张时浏览器不会悄悄清掉本地账本
+      // ② 注册 Service Worker：断网也能打开页面（仅 https / localhost 下生效）
+      ;(function () {
+        try {
+          if (navigator.storage && navigator.storage.persisted) {
+            navigator.storage.persisted().then(function (p) {
+              if (!p && navigator.storage.persist) navigator.storage.persist()
+            })
+          }
+        } catch (e) {}
+        if (
+          'serviceWorker' in navigator &&
+          (location.protocol === 'https:' ||
+            location.hostname === 'localhost' ||
+            location.hostname === '127.0.0.1')
+        ) {
+          window.addEventListener('load', function () {
+            navigator.serviceWorker.register('./sw.js').catch(function () {})
+          })
+        }
+      })()
+    </script>
   </body>
 </html>

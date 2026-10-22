@@ -5,7 +5,7 @@ import path from 'node:path'
 
 // 模拟 deploy/api.php 的服务端契约（含版本号与 409 冲突），用于在本地验证同步逻辑
 const root = path.resolve('dist')
-const FILE = 'xiaojinku-v2.19.html'
+const FILE = 'index.html'
 const TOKEN = 'testtoken123'
 
 let serverState = { version: 0, updatedAt: null, data: null }
@@ -77,7 +77,12 @@ const httpServer = http.createServer((req, res) => {
       res.end('nf')
       return
     }
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    const MIME = {
+      '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript',
+      '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+      '.png': 'image/png', '.svg': 'image/svg+xml', '.css': 'text/css',
+    }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f).toLowerCase()] || 'application/octet-stream' })
     res.end(buf)
   })
 })

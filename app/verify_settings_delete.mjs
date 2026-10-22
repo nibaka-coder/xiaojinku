@@ -3,7 +3,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const FILE = 'xiaojinku-v2.19.html'
+const FILE = 'index.html'
 const root = path.resolve('dist')
 const server = http.createServer((req, res) => {
   if (req.url.includes('favicon')) { res.writeHead(204); res.end(); return }

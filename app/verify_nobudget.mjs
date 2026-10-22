@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root = path.resolve('dist')
-const FILE = 'xiaojinku-v2.19.html'
+const FILE = 'index.html'
 const server = http.createServer((req, res) => {
   if (req.url.includes('favicon')) { res.writeHead(204); res.end(); return }
   const f = path.join(root, req.url === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0]))
