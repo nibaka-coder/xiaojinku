@@ -194,7 +194,6 @@ export default function AddTransaction() {
             inputMode="decimal"
             className="flex-1 bg-transparent text-3xl font-semibold text-main outline-none tabular-nums"
             placeholder="0.00"
-            autoFocus
             value={amountStr}
             onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9.]/g, ''))}
           />

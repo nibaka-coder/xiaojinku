@@ -83,26 +83,28 @@ export default function Holdings() {
         </button>
       </div>
 
-      {/* 汇总 */}
+      {/* 汇总：手机行式（标签左 · 金额右），≥sm 三列 */}
       <section className="card">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
+        <div className="space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-2 sm:text-center">
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="text-xs text-faint">持仓市值</div>
-            <div className="font-semibold">{fmtMoney(summary.marketCNY, 'CNY')}</div>
+            <div className="font-semibold tabular-nums">{fmtMoney(summary.marketCNY, 'CNY', { compact: true })}</div>
           </div>
-          <div>
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="text-xs text-faint">总投入</div>
-            <div className="font-semibold text-sub">{fmtMoney(summary.costCNY, 'CNY')}</div>
+            <div className="font-semibold text-sub tabular-nums">{fmtMoney(summary.costCNY, 'CNY', { compact: true })}</div>
           </div>
-          <div>
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="text-xs text-faint">累计盈亏</div>
-            <div className="font-semibold" style={{ color: colorOf(summary.profitCNY) }}>
-              {sign(summary.profitCNY)}
-              {fmtMoney(summary.profitCNY, 'CNY')}
-            </div>
-            <div className="text-xs" style={{ color: colorOf(summary.profitCNY) }}>
-              {sign(summary.profitPct)}
-              {Math.round(summary.profitPct)}%
+            <div>
+              <div className="font-semibold tabular-nums sm:mt-0.5" style={{ color: colorOf(summary.profitCNY) }}>
+                {sign(summary.profitCNY)}
+                {fmtMoney(summary.profitCNY, 'CNY', { compact: true })}
+              </div>
+              <div className="text-xs" style={{ color: colorOf(summary.profitCNY) }}>
+                {sign(summary.profitPct)}
+                {Math.round(summary.profitPct)}%
+              </div>
             </div>
           </div>
         </div>

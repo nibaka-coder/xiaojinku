@@ -173,23 +173,26 @@ export default function Overview() {
         style={{ background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%)' }}
       >
         <div className="text-sm opacity-85">净资产（{curYm.replace('-', '年')}月）</div>
-        <div className="text-3xl font-semibold mt-1 tracking-tight">{fmtMoney(nw, 'CNY')}</div>
-        <div className="grid grid-cols-4 gap-2 mt-5 text-sm">
-          <div>
+        <div className="text-2xl sm:text-3xl font-semibold mt-1 tracking-tight tabular-nums">
+          {fmtMoney(nw, 'CNY')}
+        </div>
+        {/* 手机 2×2（标签左 · 金额右），≥sm 恢复四列 */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 mt-5 text-sm sm:grid-cols-4 sm:gap-2">
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="opacity-80">现金</div>
-            <div className="font-semibold">{fmtMoney(cash, 'CNY')}</div>
+            <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(cash, 'CNY', { compact: true })}</div>
           </div>
-          <div>
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="opacity-80">投资市值</div>
-            <div className="font-semibold">{fmtMoney(investM, 'CNY')}</div>
+            <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(investM, 'CNY', { compact: true })}</div>
           </div>
-          <div>
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="opacity-80">信用负债</div>
-            <div className="font-semibold">{fmtMoney(credit, 'CNY')}</div>
+            <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(credit, 'CNY', { compact: true })}</div>
           </div>
-          <div>
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="opacity-80">长期负债</div>
-            <div className="font-semibold">{fmtMoney(liab, 'CNY')}</div>
+            <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(liab, 'CNY', { compact: true })}</div>
           </div>
         </div>
       </section>
@@ -223,16 +226,20 @@ export default function Overview() {
         <div className="grid grid-cols-3 gap-2 text-center mb-3">
           <div>
             <div className="text-xs text-faint">本月收入</div>
-            <div className="font-semibold" style={{ color: 'var(--income)' }}>{fmtMoney(ms.income, 'CNY')}</div>
+            <div className="font-semibold tabular-nums" style={{ color: 'var(--income)' }}>
+              {fmtMoney(ms.income, 'CNY', { compact: true })}
+            </div>
           </div>
           <div>
             <div className="text-xs text-faint">本月支出{hasAmort ? '（摊销口径）' : ''}</div>
-            <div className="font-semibold" style={{ color: 'var(--expense)' }}>{fmtMoney(ms.expense, 'CNY')}</div>
+            <div className="font-semibold tabular-nums" style={{ color: 'var(--expense)' }}>
+              {fmtMoney(ms.expense, 'CNY', { compact: true })}
+            </div>
           </div>
           <div>
             <div className="text-xs text-faint">净额</div>
-            <div className="font-semibold" style={{ color: ms.net >= 0 ? 'var(--accent)' : 'var(--danger)' }}>
-              {fmtMoney(ms.net, 'CNY', { sign: true })}
+            <div className="font-semibold tabular-nums" style={{ color: ms.net >= 0 ? 'var(--accent)' : 'var(--danger)' }}>
+              {fmtMoney(ms.net, 'CNY', { sign: true, compact: true })}
             </div>
           </div>
         </div>
