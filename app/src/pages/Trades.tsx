@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { fmtMoney } from '@/lib/money'
-import { deriveLots, investTxnAmount, sharesHeldAt } from '@/lib/calc'
+import { deriveLots, investTxnAmount, sharesHeldAt, totalDividend } from '@/lib/calc'
 import { fmtDate, nowLocalISO } from '@/lib/date'
 import { buildPending, fetchPlansFor } from '@/lib/dividendScan'
 import type { InvestTxn, InvestTxnType } from '@/types'
 import Modal from '@/components/Modal'
 
-// 分红不在这里展示 —— 统一由「分红助手」检测并入账，避免同一笔分红被记两次
+// 分红由「分红助手」检测入账，记录页只负责展示与删除（新增入口不在这里，避免重复记账）
 const TXN_LABEL: Record<InvestTxnType, string> = {
   buy: '买入',
   sell: '卖出',
@@ -26,6 +26,7 @@ const FILTERS: { key: InvestTxnType | 'all'; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'buy', label: '买入' },
   { key: 'sell', label: '卖出' },
+  { key: 'dividend', label: '分红' },
   { key: 'split', label: '送股' },
 ]
 
@@ -61,6 +62,7 @@ export default function Trades() {
   const refreshQuotes = useStore((s) => s.refreshQuotes)
   const setDividendScanAt = useStore((s) => s.setDividendScanAt)
   const ignored = useStore((s) => s.settings.dividendIgnored ?? [])
+  const costBasis = useStore((s) => s.settings.costBasis ?? 'actual')
   const [filter, setFilter] = useState<InvestTxnType | 'all'>('all')
   const [secFilter, setSecFilter] = useState('all')
   const [delId, setDelId] = useState<string | null>(null)
@@ -73,6 +75,12 @@ export default function Trades() {
     [securities, investTxns, fxRate, hkdRate]
   )
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  // 每只证券累计分红到手（原币），用于分红行副标题
+  const divTotalBySec = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const s of securities) m.set(s.id, totalDividend(investTxns, s.id))
+    return m
+  }, [securities, investTxns])
 
   // 刷新行情时顺带强制重新检测分红：已入账的会自动去重，不会重复提醒
   const scanDividends = async () => {
@@ -98,7 +106,6 @@ export default function Trades() {
   const list = useMemo(
     () =>
       investTxns
-        .filter((t) => t.type !== 'dividend')
         .filter((t) => (filter === 'all' ? true : t.type === filter))
         .filter((t) => (secFilter === 'all' ? true : t.security_id === secFilter))
         .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime()),
@@ -208,14 +215,21 @@ export default function Trades() {
                       <span className="text-xs text-sub">
                         {t.type === 'split'
                           ? `股数 ${t.shares > 0 ? '+' : ''}${t.shares} · 成本摊薄`
-                          : `${t.shares} 股 × ${fmtMoney(t.price, t.currency)}`}
+                          : t.type === 'dividend'
+                            ? t.shares > 0
+                              ? `持股 ${t.shares} 股 × 每股 ${fmtMoney(t.price, t.currency)}`
+                              : '分红（按总额）'
+                            : `${t.shares} 股 × ${fmtMoney(t.price, t.currency)}`}
                         {t.type !== 'split' && (t.fee ?? 0) !== 0 && (
                           <span className="text-faint">
-                            {` ${t.type === 'sell' ? '−' : '+'} 费 ${fmtMoney(Math.abs(t.fee), t.currency)}`}
+                            {` ${t.type === 'dividend' ? '税 −' : t.type === 'sell' ? '− 费 ' : '+ 费 '}${fmtMoney(Math.abs(t.fee), t.currency)}`}
                           </span>
                         )}
                       </span>
-                      <span className="font-semibold tabular-nums shrink-0">
+                      <span
+                        className="font-semibold tabular-nums shrink-0"
+                        style={t.type === 'dividend' ? { color: 'var(--income)' } : undefined}
+                      >
                         {t.type === 'split' ? '—' : fmtMoney(investTxnAmount(t), t.currency)}
                       </span>
                     </div>
@@ -223,7 +237,13 @@ export default function Trades() {
                     {/* 第三层：盈亏 / 状态 + 操作 */}
                     <div className="flex items-end justify-between gap-2 mt-1.5">
                       <div className="min-w-0 text-xs">
-                        {t.type === 'sell' && match ? (
+                        {t.type === 'dividend' ? (
+                          <span className="text-faint">
+                            分红到手 · 该证券累计{' '}
+                            {fmtMoney(divTotalBySec.get(t.security_id) ?? 0, t.currency)}
+                            {costBasis === 'amortized' ? '（已冲减持仓成本）' : ''}
+                          </span>
+                        ) : t.type === 'sell' && match ? (
                           <span style={{ color: colorOf(match.realizedPL) }}>
                             已实现 {sign(match.realizedPL)}
                             {fmtMoney(match.realizedPL, t.currency)}（{sign(sellPct)}

@@ -350,8 +350,54 @@ ok('投资设置子页有「摊薄成本」选项', investText.includes('摊薄�
 await page.goto(base + '?t=' + Date.now() + '#/invest/trades', { waitUntil: 'networkidle2' })
 await new Promise((r) => setTimeout(r, 1500))
 const tradeText = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
-ok('记录页已无分红筛选', !tradeText.includes('分红'))
+ok('记录页有「分红」筛选', tradeText.includes('分红'))
 ok('记录页按月份分组', /\d{4}年\d{1,2}月/.test(tradeText), tradeText.slice(0, 80).replace(/\n/g, ' | '))
+
+// 注入一笔「已入账分红」（等同于分红助手确认后的台账），验证记录页看得见、删得掉
+const injected = await page.evaluate(async () => {
+  const db = await new Promise((res, rej) => {
+    const r = indexedDB.open('keyval-store')
+    r.onsuccess = () => res(r.result)
+    r.onerror = () => rej(r.error)
+  })
+  const store = db.transaction('keyval', 'readwrite').objectStore('keyval')
+  const cur = await new Promise((res, rej) => {
+    const q = store.get('xiaojinku-store')
+    q.onsuccess = () => res(q.result)
+    q.onerror = () => rej(q.error)
+  })
+  if (!cur) return false
+  const p = JSON.parse(cur)
+  const sec = (p.state.securities || []).find((s) => (s.name || '').includes('茅台'))
+  if (!sec) return false
+  p.state.investTxns.push({
+    id: 'itx_div_test',
+    security_id: sec.id,
+    type: 'dividend',
+    datetime: '2026-10-20T09:30:00.000Z',
+    shares: 100,
+    price: 5,
+    fee: 50, // 代扣税
+    currency: 'CNY',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  })
+  await new Promise((res, rej) => {
+    const q = store.put(JSON.stringify(p), 'xiaojinku-store')
+    q.onsuccess = () => res(true)
+    q.onerror = () => rej(q.error)
+  })
+  return true
+})
+ok('成功注入一笔分红到台账', injected === true)
+
+await page.goto(base + '?t=' + Date.now() + '#/invest/trades', { waitUntil: 'networkidle2' })
+await new Promise((r) => setTimeout(r, 1500))
+const tradeText2 = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
+ok('分红入账后在记录页可见', tradeText2.includes('分红到手'), tradeText2.slice(0, 120).replace(/\n/g, ' | '))
+ok('分红金额按到手净额显示（100×5−50=450）', tradeText2.includes('450.00'))
+ok('分红行标注代扣税', tradeText2.includes('税 −50.00') || tradeText2.includes('税 −¥50.00'))
+ok('分红行有删除入口（误入账可撤销）', (tradeText2.match(/🗑/g) || []).length >= 3)
 
 await page.goto(base + '?t=' + Date.now() + '#/invest/holdings', { waitUntil: 'networkidle2' })
 await new Promise((r) => setTimeout(r, 1500))

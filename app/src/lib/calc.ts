@@ -101,12 +101,21 @@ export function dividendGross(t: Pick<InvestTxn, 'shares' | 'price' | 'fee'>): n
 // 一笔投资交易的金额（原币）：
 //   买入 = 实际支出（成交价 + 手续费）
 //   卖出 = 实际到手（成交价 − 手续费）  ← 与 deriveLots 的已实现盈亏口径一致
+//   分红 = 到手净额（税前 − 代扣税），fee 在分红里是税、必须「减」
 //   送股/拆股 = 0（只变股数、不变金额）
 export function investTxnAmount(
   t: Pick<InvestTxn, 'type' | 'shares' | 'price' | 'fee'>
 ): number {
   if (t.type === 'split') return 0
+  if (t.type === 'dividend') return dividendAmount(t)
   return t.type === 'sell' ? t.shares * t.price - (t.fee ?? 0) : t.shares * t.price + (t.fee ?? 0)
+}
+
+// 某证券累计分红到手（原币）
+export function totalDividend(investTxns: InvestTxn[], securityId: string): number {
+  return investTxns
+    .filter((t) => t.security_id === securityId && t.type === 'dividend')
+    .reduce((a, t) => a + dividendAmount(t), 0)
 }
 
 export interface Holding {
