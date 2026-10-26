@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { fmtMoney } from '@/lib/money'
-import { deriveLots, sharesHeldAt } from '@/lib/calc'
+import { deriveLots, investTxnAmount, sharesHeldAt } from '@/lib/calc'
 import { fmtDate, nowLocalISO } from '@/lib/date'
 import { buildPending, fetchPlansFor } from '@/lib/dividendScan'
 import type { InvestTxn, InvestTxnType } from '@/types'
@@ -29,10 +29,6 @@ const FILTERS: { key: InvestTxnType | 'all'; label: string }[] = [
   { key: 'split', label: '送股' },
 ]
 
-function txnAmount(t: { type: InvestTxnType; shares: number; price: number; fee: number }): number {
-  if (t.type === 'split') return 0
-  return t.shares * t.price + t.fee
-}
 
 // 红涨绿跌（仅投资模块）
 function colorOf(v: number): string {
@@ -213,9 +209,14 @@ export default function Trades() {
                         {t.type === 'split'
                           ? `股数 ${t.shares > 0 ? '+' : ''}${t.shares} · 成本摊薄`
                           : `${t.shares} 股 × ${fmtMoney(t.price, t.currency)}`}
+                        {t.type !== 'split' && (t.fee ?? 0) !== 0 && (
+                          <span className="text-faint">
+                            {` ${t.type === 'sell' ? '−' : '+'} 费 ${fmtMoney(Math.abs(t.fee), t.currency)}`}
+                          </span>
+                        )}
                       </span>
                       <span className="font-semibold tabular-nums shrink-0">
-                        {t.type === 'split' ? '—' : fmtMoney(txnAmount(t), t.currency)}
+                        {t.type === 'split' ? '—' : fmtMoney(investTxnAmount(t), t.currency)}
                       </span>
                     </div>
 

@@ -98,6 +98,17 @@ export function dividendGross(t: Pick<InvestTxn, 'shares' | 'price' | 'fee'>): n
   return t.shares > 0 ? t.shares * t.price : t.price
 }
 
+// 一笔投资交易的金额（原币）：
+//   买入 = 实际支出（成交价 + 手续费）
+//   卖出 = 实际到手（成交价 − 手续费）  ← 与 deriveLots 的已实现盈亏口径一致
+//   送股/拆股 = 0（只变股数、不变金额）
+export function investTxnAmount(
+  t: Pick<InvestTxn, 'type' | 'shares' | 'price' | 'fee'>
+): number {
+  if (t.type === 'split') return 0
+  return t.type === 'sell' ? t.shares * t.price - (t.fee ?? 0) : t.shares * t.price + (t.fee ?? 0)
+}
+
 export interface Holding {
   security: Security
   shares: number // 当前股数

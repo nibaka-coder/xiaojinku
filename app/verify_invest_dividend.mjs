@@ -231,6 +231,26 @@ console.log('\n=== A9) 转账记录不完整也不再影响净资产（取消券
   ok('走势 cash 项即银行卡现金', near(tr[0].cash, 137000), `实际 ${tr[0].cash}`)
 }
 
+console.log('\n=== A10) 交易金额：买入含费、卖出扣费（与已实现盈亏口径一致）===')
+{
+  ok('买入 = 股数×价 + 手续费', near(C.investTxnAmount({ type: 'buy', shares: 100, price: 80, fee: 12 }), 8012))
+  ok('卖出 = 股数×价 − 手续费', near(C.investTxnAmount({ type: 'sell', shares: 100, price: 80, fee: 12 }), 7988))
+  ok('无费时买卖同额', near(C.investTxnAmount({ type: 'sell', shares: 100, price: 80, fee: 0 }), 8000))
+  ok('送股金额为 0', near(C.investTxnAmount({ type: 'split', shares: 100, price: 0, fee: 0 }), 0))
+
+  // 与 deriveLots 的已实现盈亏对账：卖出到手 − 买入成本 = 已实现盈亏
+  const sec = { ...SEC, id: 's1', currency: 'CNY', lastPrice: 100 }
+  const inv = [
+    mkInv({ type: 'buy', shares: 100, price: 80, fee: 10 }), // 成本 8010，每股 80.1
+    mkInv({ type: 'sell', shares: 100, price: 90, fee: 15 }), // 到手 8985
+  ]
+  const d = C.deriveLots([sec], inv, FX, HKD)
+  const realized = d.sells[inv[1].id].realizedPL
+  const proceeds = C.investTxnAmount(inv[1])
+  const cost = C.investTxnAmount(inv[0])
+  ok('已实现盈亏 = 卖出到手 − 买入成本', near(realized, proceeds - cost), `${proceeds} − ${cost} = ${proceeds - cost}，实际 ${realized}`)
+}
+
 // ===== Part B：真渲染 =====
 console.log('\n=== B) 真渲染（dist 单文件，无头 Chrome）===')
 const root = path.resolve('dist')
