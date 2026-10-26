@@ -14,7 +14,7 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'expense', label: '支出' },
   { key: 'income', label: '收入' },
   { key: 'repayment', label: '还款' },
-  { key: 'transfer', label: '投资转账' },
+  { key: 'transfer', label: '转账' },
 ]
 
 const FUND_SOURCES: { key: FundSource; label: string; icon: string }[] = [
@@ -116,9 +116,9 @@ export default function AddTransaction() {
       type: finalType,
       amount,
       currency: 'CNY' as const,
-      fund_source: fundSource,
+      fund_source: finalType === 'income' ? 'cash' : fundSource,
       category_id: isRepayment || isTransfer ? undefined : categoryId || undefined,
-      payee: payee || undefined,
+      payee: finalType === 'income' ? undefined : payee || undefined,
       note: note || undefined,
       datetime: dt,
       is_repayment: isRepayment || undefined,
@@ -178,7 +178,7 @@ export default function AddTransaction() {
               }
               setCategoryId('')
             }}
-            className={`seg-item flex-1 ${mode === m.key ? 'seg-item-active' : ''}`}
+            className={`seg-item flex-1 whitespace-nowrap ${mode === m.key ? 'seg-item-active' : ''}`}
           >
             {m.label}
           </button>
@@ -250,7 +250,7 @@ export default function AddTransaction() {
         </div>
       )}
 
-      {!isRepayment && !isTransfer && (
+      {!isRepayment && !isTransfer && type === 'expense' && (
         <div>
           <label className="label">资金来源</label>
           <div className="seg w-full">
@@ -267,8 +267,8 @@ export default function AddTransaction() {
         </div>
       )}
 
-      {/* 摊销：车险 / 年度会员等按区间分摊成本 */}
-      {!isRepayment && !isTransfer && (
+      {/* 摊销：车险 / 年度会员等按区间分摊成本（仅支出；收入不显示） */}
+      {!isRepayment && !isTransfer && type === 'expense' && (
         <div className="space-y-2">
           <button
             type="button"
@@ -354,7 +354,7 @@ export default function AddTransaction() {
           onClick={() => setShowMore((v) => !v)}
           className="label flex w-full items-center justify-between"
         >
-          <span>更多（日期 / 商户 / 备注）</span>
+          <span>更多（日期{type === 'income' ? '' : ' / 商户'} / 备注）</span>
           <span className="text-faint">{showMore ? '收起 ▲' : '展开 ▼'}</span>
         </button>
         {showMore && (
@@ -363,15 +363,17 @@ export default function AddTransaction() {
               <label className="label">日期</label>
               <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
-            <div>
-              <label className="label">商户 / 对方</label>
-              <input
-                className="input"
-                placeholder="如：麦当劳、房东"
-                value={payee}
-                onChange={(e) => setPayee(e.target.value)}
-              />
-            </div>
+            {type !== 'income' && (
+              <div>
+                <label className="label">商户 / 对方</label>
+                <input
+                  className="input"
+                  placeholder="如：麦当劳、房东"
+                  value={payee}
+                  onChange={(e) => setPayee(e.target.value)}
+                />
+              </div>
+            )}
             <div>
               <label className="label">备注</label>
               <input
