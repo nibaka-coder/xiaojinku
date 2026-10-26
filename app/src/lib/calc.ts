@@ -1,4 +1,11 @@
-import type { Liability, Transaction, Category, Security, InvestTxn } from '@/types'
+import type {
+  Liability,
+  Transaction,
+  Category,
+  Security,
+  InvestTxn,
+  CostBasis,
+} from '@/types'
 import { monthRange, monthDiff, monthsInRange } from '@/lib/date'
 
 // 以下函数均可传入 endTs 计算「截至某时点」的余额（用于净资产走势）；默认取全部交易
@@ -54,7 +61,39 @@ export function liabilitiesTotal(liabilities: Liability[], txns: Transaction[], 
     .reduce((s, l) => s + liabilityCurrentBalance(l, txns, endTs), 0)
 }
 
-// 净资产 = 现金余额 − 信用贷款负债 − 长期负债(车贷等) + 投资市值
+// 投资账户现金（券商可取资金）—— 派生值，不存库
+// = 转账净额（转出 − 回收）− 买入支出 + 卖出回款 + 分红到手
+//
+// ⚠️ 与「回收」转账的去重关键：
+// 「回收」只是把钱从券商搬回银行卡 —— cashBalance 加 Y 的同时这里减 Y，两端相抵、总和守恒，
+// 一笔钱在任何阶段只被计一次，不会重复计入净资产。
+// 真正要防的是同一笔分红既进这里又被记成日常「收入」，本实现中分红只走 investTxns，不进 income。
+export function investCashBalance(
+  txns: Transaction[],
+  investTxns: InvestTxn[],
+  fxRate: number,
+  hkdRate: number = 0.915,
+  endTs = Infinity
+): number {
+  let c = 0
+  for (const t of txns) {
+    if (endTs !== Infinity && new Date(t.datetime).getTime() > endTs) continue
+    if (!t.is_investment_transfer) continue
+    // 转出（expense）：银行卡 → 券商，投资现金 +；回收（income）：券商 → 银行卡，投资现金 −
+    c += t.type === 'income' ? -t.amount : t.amount
+  }
+  for (const t of investTxns) {
+    if (endTs !== Infinity && new Date(t.datetime).getTime() > endTs) continue
+    const fx = t.currency === 'USD' ? fxRate : t.currency === 'HKD' ? hkdRate : 1
+    if (t.type === 'buy') c -= (t.shares * t.price + t.fee) * fx
+    else if (t.type === 'sell') c += (t.shares * t.price - t.fee) * fx
+    else if (t.type === 'dividend') c += dividendAmount(t) * fx
+  }
+  return c
+}
+
+// 净资产 = 银行卡现金 + 券商账户现金 + 投资市值 − 信用贷款负债 − 长期负债(车贷等)
+// 券商现金这一项不能省：分红进的是券商账户，若不计入，除权后净资产会凭空少一笔。
 export function netWorth(
   txns: Transaction[],
   liabilities: Liability[],
@@ -65,26 +104,43 @@ export function netWorth(
   hkdRate: number = 0.915
 ): number {
   return (
-    cashBalance(txns, cashOpening) -
+    cashBalance(txns, cashOpening) +
+    investCashBalance(txns, investTxns, fxRate, hkdRate) +
+    investSummary(securities, investTxns, fxRate, hkdRate).marketCNY -
     creditLiability(txns) -
-    liabilitiesTotal(liabilities, txns) +
-    investSummary(securities, investTxns, fxRate, hkdRate).marketCNY
+    liabilitiesTotal(liabilities, txns)
   )
 }
 
 // ===== 投资管理 =====
 
+// 一笔分红到手多少（原币）。
+// 记账约定：price = 每股税前，shares = 持股数，fee = 代扣税。
+// ⚠️ 历史 bug：旧实现写成 `amt + fee`，而 fee 是代扣税应当扣除，会虚增分红。
+export function dividendAmount(t: Pick<InvestTxn, 'shares' | 'price' | 'fee'>): number {
+  const gross = t.shares > 0 ? t.shares * t.price : t.price
+  const tax = t.fee ?? 0
+  return gross - tax
+}
+
+// 一笔分红的税前金额（原币）
+export function dividendGross(t: Pick<InvestTxn, 'shares' | 'price' | 'fee'>): number {
+  return t.shares > 0 ? t.shares * t.price : t.price
+}
+
 export interface Holding {
   security: Security
   shares: number // 当前股数
-  avgCost: number // 原币 平均成本
-  costOrig: number // 原币 累计成本（含费用）
+  avgCost: number // 原币 平均成本（按 basis 口径）
+  costOrig: number // 原币 真实成本（含费用，口径 A）
+  amortizedCostOrig: number // 原币 摊薄成本（口径 B）= 真实成本 − 累计分红到手
   currentPrice: number // 原币 现价
   marketValueCNY: number // 市值（折 CNY）
-  costCNY: number // 成本（折 CNY）
+  costCNY: number // 成本（折 CNY，按 basis 口径）
   profitCNY: number // 浮动盈亏（折 CNY）
   profitPct: number // 盈亏率 %
-  dividendCNY: number // 累计分红（折 CNY）
+  dividendCNY: number // 累计分红「到手」（税后，折 CNY）——净资产里加的就是这个数
+  dividendGrossCNY: number // 累计分红「税前」（折 CNY）
 }
 
 function currentPriceOf(s: Security): number {
@@ -96,11 +152,13 @@ export function deriveHolding(
   s: Security,
   txns: InvestTxn[],
   fxRate: number,
-  hkdRate: number = 0.915
+  hkdRate: number = 0.915,
+  basis: CostBasis = 'actual'
 ): Holding {
   let shares = 0
   let costOrig = 0
-  let dividendOrig = 0
+  let divGrossOrig = 0
+  let divNetOrig = 0
   for (const t of txns) {
     if (t.security_id !== s.id) continue
     if (t.type === 'buy') {
@@ -111,32 +169,67 @@ export function deriveHolding(
       shares -= t.shares
       costOrig -= t.shares * avg
     } else if (t.type === 'dividend') {
-      const amt = t.shares > 0 ? t.shares * t.price : t.price
-      dividendOrig += amt + t.fee
+      divGrossOrig += dividendGross(t)
+      divNetOrig += dividendAmount(t)
+    } else if (t.type === 'split') {
+      // 送股 / 转增 / 拆股：只增减股数，总成本不变 → 每股成本自动摊薄
+      shares += t.shares
     }
   }
   if (costOrig < 0) costOrig = 0
   if (shares < 0) shares = 0
-  const avgCost = shares > 0 ? costOrig / shares : 0
+  // 摊薄成本（口径 B）= 真实成本 − 累计分红到手。长期高分红股可能算出负数，属预期行为。
+  const amortizedCostOrig = costOrig - divNetOrig
+  // costCNY / avgCost / profitCNY 按当前口径给出；costOrig 始终返回「真实成本」供展示与换算
+  const usedCostOrig = basis === 'amortized' ? amortizedCostOrig : costOrig
+  const avgCost = shares > 0 ? usedCostOrig / shares : 0
   const cur = currentPriceOf(s)
   const fx = s.currency === 'USD' ? fxRate : s.currency === 'HKD' ? hkdRate : 1
   const marketValueCNY = shares * cur * fx
-  const costCNY = costOrig * fx
+  const costCNY = usedCostOrig * fx
   const profitCNY = marketValueCNY - costCNY
+  // 摊薄口径下成本可能 ≤ 0，此时盈亏率无意义，按 0 展示以避免出现天文数字
   const profitPct = costCNY > 0 ? (profitCNY / costCNY) * 100 : 0
-  const dividendCNY = dividendOrig * fx
+  const dividendCNY = divNetOrig * fx
+  const dividendGrossCNY = divGrossOrig * fx
   return {
     security: s,
     shares,
     avgCost,
     costOrig,
+    amortizedCostOrig,
     currentPrice: cur,
     marketValueCNY,
     costCNY,
     profitCNY,
     profitPct,
     dividendCNY,
+    dividendGrossCNY,
   }
+}
+
+// 某证券在「某时点」的持股数（分红助手按登记日算股数用）
+export function sharesHeldAt(securityId: string, txns: InvestTxn[], ts: number): number {
+  let sh = 0
+  for (const t of txns) {
+    if (t.security_id !== securityId) continue
+    if (new Date(t.datetime).getTime() > ts) continue
+    if (t.type === 'buy' || t.type === 'split') sh += t.shares
+    else if (t.type === 'sell') sh -= t.shares
+  }
+  return Math.max(0, sh)
+}
+
+// 某证券最早一笔建仓（买入/送股）时间：A 股差别化红利税按持股时长分档，用它估档位
+export function firstBuyTs(securityId: string, txns: InvestTxn[]): number {
+  let min = Infinity
+  for (const t of txns) {
+    if (t.security_id !== securityId) continue
+    if (t.type !== 'buy' && t.type !== 'split') continue
+    const ts = new Date(t.datetime).getTime()
+    if (ts < min) min = ts
+  }
+  return min === Infinity ? 0 : min
 }
 
 // ===== 买卖批次配对（手动指定 + FIFO 兜底） =====
@@ -198,6 +291,19 @@ export function deriveLots(
           openedAt: t.datetime,
           remaining: t.shares,
         })
+      } else if (t.type === 'split') {
+        // 送股 / 转增 / 拆股：不新增批次（那会把送来的股当零成本、虚增已实现盈亏），
+        // 而是按比例放大现有未卖批次的股数、摊薄每股成本 —— 批次的成本总额保持不变。
+        const heldNow = lots.reduce((a, l) => a + l.remaining, 0)
+        const target = heldNow + t.shares
+        if (heldNow > 0 && target > 0) {
+          const ratio = target / heldNow
+          for (const l of lots) {
+            if (l.remaining <= 0) continue
+            l.remaining = l.remaining * ratio
+            l.costPerShare = l.costPerShare / ratio
+          }
+        }
       } else if (t.type === 'sell') {
         // 1) 计划：优先用手动 matchedLots
         let plan: { lotIndex: number; shares: number }[] = []
@@ -266,15 +372,17 @@ export function investSummary(
   securities: Security[],
   investTxns: InvestTxn[],
   fxRate: number,
-  hkdRate: number = 0.915
+  hkdRate: number = 0.915,
+  basis: CostBasis = 'actual'
 ): InvestSummary {
   let m = 0
   let c = 0
   let d = 0
   let count = 0
   for (const s of securities) {
-    const h = deriveHolding(s, investTxns, fxRate, hkdRate)
-    if (h.shares <= 0 && h.costCNY <= 0) continue
+    const h = deriveHolding(s, investTxns, fxRate, hkdRate, basis)
+    // 「是否曾持有」用真实成本判断，避免摊薄口径下成本为负时误判为无持仓
+    if (h.shares <= 0 && h.costOrig <= 0) continue
     m += h.marketValueCNY
     c += h.costCNY
     d += h.dividendCNY
@@ -477,6 +585,7 @@ export function netWorthTrend(
   return months.map((m) => {
     const { end } = monthRange(m)
     const cash = cashBalance(txns, cashOpening, end)
+    const investCash = investCashBalance(txns, investTxns, fxRate, hkdRate, end)
     const debt = creditLiability(txns, end) + liabilitiesTotal(liabilities, txns, end)
     let invest = 0
     for (const s of securities) {
@@ -486,7 +595,13 @@ export function netWorthTrend(
       if (!held.length) continue
       invest += deriveHolding(s, held, fxRate, hkdRate).marketValueCNY
     }
-    return { ym: m, net: cash - debt + invest, cash, invest, debt }
+    return {
+      ym: m,
+      net: cash + investCash - debt + invest,
+      cash: cash + investCash,
+      invest,
+      debt,
+    }
   })
 }
 

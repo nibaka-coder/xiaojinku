@@ -5,12 +5,13 @@ import path from 'node:path'
 
 const root = path.resolve('dist')
 const FILE = 'index.html'
+const MIME = { '.js': 'application/javascript; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 const server = http.createServer((req, res) => {
   if (req.url.includes('favicon')) { res.writeHead(204); res.end(); return }
   const f = path.join(root, req.url === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0]))
   fs.readFile(f, (e, buf) => {
     if (e) { res.writeHead(404); res.end('nf'); return }
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(buf)
+    res.writeHead(200, { 'content-type': MIME[path.extname(f).toLowerCase()] ?? 'text/html; charset=utf-8' }); res.end(buf)
   })
 })
 await new Promise(r => server.listen(0, '127.0.0.1', r))
@@ -42,7 +43,7 @@ const clickByText = async (text) => {
 let pass = 0, fail = 0
 const check = (name, cond) => { console.log((cond ? 'PASS' : 'FAIL') + ' - ' + name); cond ? pass++ : fail++ }
 
-// ===== 1) 净资产走势图（统计页，需 近3月 以上） =====
+// ===== 1) 统计页：单月提示与区间切换 =====
 await page.goto(base + FILE + '#/statistics', { waitUntil: 'networkidle2' })
 await waitText('统计')
 let txt = await bodyText()
@@ -50,17 +51,22 @@ check('单月时提示选择更长区间', txt.includes('选择更长时间区�
 // 切到近6月
 await clickByText('近6月')
 await new Promise(r => setTimeout(r, 1200))
+
+// ===== 1b) 净资产走势图在「概览页」（统计页无此模块，自 v2.23 起就在概览） =====
+await page.goto(base + FILE + '#/', { waitUntil: 'networkidle2' })
+await new Promise(r => setTimeout(r, 1500))
 txt = await bodyText()
 check('出现「净资产走势」模块', txt.includes('净资产走势'))
 check('走势图有预算说明（投资按当前价估算）', txt.includes('当月持股 × 当前价'))
-// 检查 ECharts 画布渲染（净资产走势 canvas 数量应为 3：趋势/饼图/净资产）
 const canvasCount = await page.evaluate(() => document.querySelectorAll('canvas').length)
-check('净资产走势图已渲染（canvas 数 ≥ 3，实际 ' + canvasCount + '）', canvasCount >= 3)
+check('净资产走势图已渲染（canvas 数 ≥ 1，实际 ' + canvasCount + '）', canvasCount >= 1)
 // 趋势卡片应展示区间变化金额
-const hasDelta = /净资产走势\n[^\n]*[+−-]?¥[\d,]+/.test(txt)
+const hasDelta = /净资产走势[^\n]*\n[^\n]*[+−-]?¥[\d,]+/.test(txt)
 check('净资产走势标题旁显示区间增减', hasDelta)
 
 // ===== 2) 支出排行 TOP10（按单笔流水，不按分类） =====
+await page.goto(base + FILE + '#/statistics', { waitUntil: 'networkidle2' })
+await waitText('统计')
 txt = await bodyText()
 check('出现「支出排行 TOP10」模块', txt.includes('支出排行 TOP10'))
 // 排行项应为具体流水条目（含日期与金额），且条数 ≤ 10

@@ -14,6 +14,7 @@ import Settings from './pages/Settings'
 import Holdings from './pages/Holdings'
 import Trades from './pages/Trades'
 import AddInvestTxn from './pages/AddInvestTxn'
+import DividendAssistant from './pages/DividendAssistant'
 
 // 根据设置应用浅/暗主题
 function useTheme() {
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/invest/holdings" element={<Holdings />} />
           <Route path="/invest/trades" element={<Trades />} />
           <Route path="/invest/add" element={<AddInvestTxn />} />
+          <Route path="/invest/dividends" element={<DividendAssistant />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

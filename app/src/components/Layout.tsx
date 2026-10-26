@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
     children: [
       { to: '/invest/holdings', label: '持仓总览' },
       { to: '/invest/trades', label: '交易记录' },
+      { to: '/invest/dividends', label: '分红助手' },
     ],
   },
   { to: '/settings', label: '设置', icon: '⚙️', single: true },
@@ -31,8 +32,8 @@ const NAV: NavItem[] = [
 const DAILY = ['/add', '/transactions', '/statistics']
 const DAILY_LABELS = ['记账', '流水', '统计']
 
-const INVEST = ['/invest/holdings', '/invest/trades']
-const INVEST_LABELS = ['持仓', '记录']
+const INVEST = ['/invest/holdings', '/invest/trades', '/invest/dividends']
+const INVEST_LABELS = ['持仓', '记录', '分红']
 
 function isActiveGroup(item: NavItem, path: string): boolean {
   if (item.single) return path === item.to

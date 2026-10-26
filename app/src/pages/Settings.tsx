@@ -15,7 +15,7 @@ import { nowLocalISO } from '@/lib/date'
 import Modal from '@/components/Modal'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import Categories from '@/pages/Categories'
-import type { Liability, Transaction, ThemeMode } from '@/types'
+import type { Liability, Transaction, ThemeMode, CostBasis } from '@/types'
 
 const LIAB_ICONS = ['🚗', '🏠', '🎓', '💊', '💼', '📦']
 
@@ -33,6 +33,8 @@ export default function Settings() {
   const resetToSeed = useStore((s) => s.resetToSeed)
   const clearAllData = useStore((s) => s.clearAllData)
   const setTheme = useStore((s) => s.setTheme)
+  const setCostBasis = useStore((s) => s.setCostBasis)
+  const costBasis = useStore((s) => s.settings.costBasis ?? 'actual')
   const setCashOpening = useStore((s) => s.setCashOpening)
   const addLiability = useStore((s) => s.addLiability)
   const updateLiability = useStore((s) => s.updateLiability)
@@ -103,6 +105,35 @@ export default function Settings() {
             )
           )}
         </div>
+      </section>
+
+      {/* 持仓成本口径 */}
+      <section className="card space-y-3">
+        <h2 className="font-medium text-main">持仓成本口径</h2>
+        <p className="text-xs text-sub">
+          只影响持仓页「成本 / 浮动盈亏」怎么显示，两种口径算出的净资产完全相同。
+        </p>
+        <div className="seg w-full">
+          {(
+            [
+              ['actual', '真实成本'],
+              ['amortized', '摊薄成本'],
+            ] as [CostBasis, string][]
+          ).map(([b, label]) => (
+            <button
+              key={b}
+              onClick={() => setCostBasis(b)}
+              className={`seg-item flex-1 ${costBasis === b ? 'seg-item-active' : ''}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-faint">
+          {costBasis === 'actual'
+            ? '成本 = 你实际投入的钱；分红单独列为收益。累计分红再多，成本也始终是你投进去的数。'
+            : '成本 = 投入的钱 − 累计分红到手（券商 App 常见的「保本价」）。长期高分红股的成本可能摊到 0 甚至负数，届时盈亏率不再显示。'}
+        </p>
       </section>
 
       {/* 应用锁 */}

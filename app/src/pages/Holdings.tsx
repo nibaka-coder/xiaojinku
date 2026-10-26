@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
-import { investSummary, deriveHolding, deriveLots } from '@/lib/calc'
+import { investSummary, deriveHolding, deriveLots, sharesHeldAt } from '@/lib/calc'
 import { fmtMoney } from '@/lib/money'
+import { nowLocalISO } from '@/lib/date'
+import { buildPending, fetchPlansFor, needScan } from '@/lib/dividendScan'
 import type { Market, Security } from '@/types'
 import Modal from '@/components/Modal'
 
@@ -36,13 +38,19 @@ export default function Holdings() {
   const hkdRate = useStore((s) => s.settings.hkdRate.rate)
   const refreshQuotes = useStore((s) => s.refreshQuotes)
   const deleteSecurity = useStore((s) => s.deleteSecurity)
+  const costBasis = useStore((s) => s.settings.costBasis ?? 'actual')
+  const scanAt = useStore((s) => s.settings.dividendScanAt)
+  const ignored = useStore((s) => s.settings.dividendIgnored ?? [])
+  const setDividendScanAt = useStore((s) => s.setDividendScanAt)
   const [refreshing, setRefreshing] = useState(false)
   const [manageSec, setManageSec] = useState<Security | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  // 每只证券的待入账分红条数（静默扫描后填入，用于持仓行角标）
+  const [pendingBySec, setPendingBySec] = useState<Record<string, number>>({})
 
   const summary = useMemo(
-    () => investSummary(securities, investTxns, fxRate, hkdRate),
-    [securities, investTxns, fxRate, hkdRate]
+    () => investSummary(securities, investTxns, fxRate, hkdRate, costBasis),
+    [securities, investTxns, fxRate, hkdRate, costBasis]
   )
   const realized = useMemo(
     () => deriveLots(securities, investTxns, fxRate, hkdRate).totalRealizedCNY,
@@ -51,10 +59,38 @@ export default function Holdings() {
   const holdings = useMemo(
     () =>
       securities
-        .map((s) => deriveHolding(s, investTxns, fxRate, hkdRate))
+        .map((s) => deriveHolding(s, investTxns, fxRate, hkdRate, costBasis))
         .sort((a, b) => b.marketValueCNY - a.marketValueCNY),
-    [securities, investTxns, fxRate, hkdRate]
+    [securities, investTxns, fxRate, hkdRate, costBasis]
   )
+
+  // 静默扫描待入账分红：只在挂载时跑一次，且距上次检查不足 7 天不发请求
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      if (!needScan(scanAt, false)) return
+      const heldSecs = securities.filter((s) => sharesHeldAt(s.id, investTxns, Date.now()) > 0)
+      if (!heldSecs.length) return
+      try {
+        const plans = await fetchPlansFor(heldSecs, 2, false)
+        const pend = buildPending(heldSecs, investTxns, plans, fxRate, hkdRate, ignored)
+        const cnt: Record<string, number> = {}
+        for (const p of pend) cnt[p.security.id] = (cnt[p.security.id] ?? 0) + 1
+        if (cancelled) return
+        setPendingBySec(cnt)
+        setDividendScanAt(nowLocalISO())
+      } catch {
+        /* 扫描失败不影响持仓页正常使用 */
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const pendingTotal = Object.values(pendingBySec).reduce((a, b) => a + b, 0)
 
   // 最新行情时间 = 各证券 quoteUpdatedAt 中最新的一条
   const latestQuoteAt = useMemo(() => {
@@ -159,10 +195,27 @@ export default function Holdings() {
                   ⋯
                 </button>
               </div>
+              {/* 待入账分红角标：静默扫描发现后提示，点进去一键确认 */}
+              {pendingBySec[h.security.id] > 0 && (
+                <button
+                  className="mt-2 w-full text-left text-xs px-2.5 py-1.5 rounded-lg"
+                  style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
+                  onClick={() => navigate('/invest/dividends')}
+                >
+                  💰 {pendingBySec[h.security.id]} 笔分红待入账 · 去确认 →
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
+
+      <button
+        className="btn-ghost w-full h-11"
+        onClick={() => navigate('/invest/dividends')}
+      >
+        💰 分红助手{pendingTotal > 0 ? ` · ${pendingTotal} 笔待入账` : ''}
+      </button>
 
       <button className="btn-primary w-full h-12" onClick={() => navigate('/invest/add')}>
         ＋ 记一笔投资

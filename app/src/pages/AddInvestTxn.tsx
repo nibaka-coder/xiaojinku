@@ -12,6 +12,7 @@ const TYPES: { key: InvestTxnType; label: string }[] = [
   { key: 'buy', label: '买入' },
   { key: 'sell', label: '卖出' },
   { key: 'dividend', label: '分红' },
+  { key: 'split', label: '送股/拆股' },
 ]
 const MARKETS: { key: Market; label: string; cur: Currency }[] = [
   { key: 'ashare', label: 'A股', cur: 'CNY' },
@@ -62,6 +63,10 @@ export default function AddInvestTxn() {
   const p = parseFloat(price) || 0
   const sh = parseFloat(shares) || 0
   const needShares = type !== 'dividend'
+  // 送股填正数（10 送 10、持 1000 股就填 1000）；合股 / 缩股填负数
+  const sharesOk = type === 'split' ? sh !== 0 : sh > 0
+  // 送股不涉及价格与费用（只动股数，总成本不变）
+  const priceOk = type === 'split' ? true : p > 0
 
   // 卖出批次：从台账推导该证券可卖批（剩余>0）
   const derived = useMemo(
@@ -129,11 +134,11 @@ export default function AddInvestTxn() {
     type !== 'sell' ||
     (!showNew && !!secId && allocatedShares > 0 && Math.abs(allocatedShares - sh) < 1e-6)
   const canSave =
-    (showNew ? !!newCode.trim() : !!secId) && p > 0 && (!needShares || sh > 0) && sellOk
+    (showNew ? !!newCode.trim() : !!secId) && priceOk && (!needShares || sharesOk) && sellOk
   const missing: string[] = []
   if (showNew ? !newCode.trim() : !secId) missing.push('证券代码')
-  if (p <= 0) missing.push('单价')
-  if (needShares && sh <= 0) missing.push('股数')
+  if (!priceOk) missing.push('单价')
+  if (needShares && !sharesOk) missing.push('股数')
   if (type === 'sell' && !showNew && secId && allocatedShares > 0 && Math.abs(allocatedShares - sh) > 1e-6)
     missing.push(`批次合计 ${allocatedShares} 股 ≠ 卖出 ${sh} 股`)
   if (type === 'sell' && allocatedShares <= 0) missing.push('卖出批次')
@@ -163,9 +168,10 @@ export default function AddInvestTxn() {
       security_id: sid,
       type,
       datetime: `${date}T${nowLocalISO().slice(11)}`,
+      // 送股 / 拆股：价格与费用强制归零，只有股数变动有意义
       shares: sh,
-      price: p,
-      fee: parseFloat(fee) || 0,
+      price: type === 'split' ? 0 : p,
+      fee: type === 'split' ? 0 : parseFloat(fee) || 0,
       currency,
       note: note || undefined,
       matchedLots,
@@ -251,7 +257,11 @@ export default function AddInvestTxn() {
       <div className="card-2 space-y-2">
         <div>
           <label className="label">
-            {type === 'dividend' ? '股数（可选，留空则单价按总额）' : '股数'}
+            {type === 'dividend'
+              ? '股数（可选，留空则单价按总额）'
+              : type === 'split'
+                ? '股数变动量（送股为正，合股为负）'
+                : '股数'}
           </label>
           <input
             className="input"
@@ -271,9 +281,19 @@ export default function AddInvestTxn() {
             placeholder="0.00"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
+            disabled={type === 'split'}
           />
         </div>
       </div>
+
+      {type === 'split' && (
+        <div
+          className="card-2 text-sm"
+          style={{ color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
+        >
+          📌 送股 / 转增 / 拆股只填「股数变动量」：送股填正数（如 10 送 10，持 1000 股就填 1000），合股填负数。总成本不变，每股成本会自动摊薄。
+        </div>
+      )}
 
       {/* 卖出批次配对（手动指定，默认 FIFO 填满股数） */}
       {type === 'sell' && !showNew && secId && (

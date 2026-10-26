@@ -5,12 +5,13 @@ import path from 'node:path'
 
 const root = path.resolve('dist')
 const FILE = 'index.html'
+const MIME = { '.js': 'application/javascript; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml' }
 const server = http.createServer((req, res) => {
   if (req.url.includes('favicon')) { res.writeHead(204); res.end(); return }
   const f = path.join(root, req.url === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0]))
   fs.readFile(f, (e, buf) => {
     if (e) { res.writeHead(404); res.end('nf'); return }
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(buf)
+    res.writeHead(200, { 'content-type': MIME[path.extname(f).toLowerCase()] ?? 'text/html; charset=utf-8' }); res.end(buf)
   })
 })
 await new Promise(r => server.listen(0, '127.0.0.1', r))

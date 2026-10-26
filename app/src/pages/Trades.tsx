@@ -2,16 +2,22 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { fmtMoney } from '@/lib/money'
-import { deriveLots } from '@/lib/calc'
+import { deriveLots, dividendAmount } from '@/lib/calc'
 import { fmtDate } from '@/lib/date'
 import type { InvestTxnType } from '@/types'
 import Modal from '@/components/Modal'
 
-const TXN_LABEL: Record<InvestTxnType, string> = { buy: '买入', sell: '卖出', dividend: '分红' }
+const TXN_LABEL: Record<InvestTxnType, string> = {
+  buy: '买入',
+  sell: '卖出',
+  dividend: '分红',
+  split: '送股/拆股',
+}
 const TXN_COLOR: Record<InvestTxnType, string> = {
   buy: 'var(--accent-strong)',
   sell: 'var(--sub)',
   dividend: 'var(--income)',
+  split: 'var(--sub)',
 }
 
 const FILTERS: { key: InvestTxnType | 'all'; label: string }[] = [
@@ -19,10 +25,14 @@ const FILTERS: { key: InvestTxnType | 'all'; label: string }[] = [
   { key: 'buy', label: '买入' },
   { key: 'sell', label: '卖出' },
   { key: 'dividend', label: '分红' },
+  { key: 'split', label: '送股/拆股' },
 ]
 
 function txnAmount(t: { type: InvestTxnType; shares: number; price: number; fee: number }): number {
-  if (t.type === 'dividend') return (t.shares > 0 ? t.shares * t.price : t.price) + t.fee
+  // 分红显示「到手」= 税前 − 代扣税（fee 存的是代扣税）
+  if (t.type === 'dividend') return dividendAmount(t)
+  // 送股 / 拆股只增减股数，不涉及金额
+  if (t.type === 'split') return 0
   return t.shares * t.price + t.fee
 }
 
@@ -140,7 +150,11 @@ export default function Trades() {
                     <div className="text-main truncate">{sec?.name ?? '已删除证券'}</div>
                     <div className="text-xs text-faint">
                       {fmtDate(t.datetime)} ·{' '}
-                      {t.type === 'dividend' ? `每股 ${fmtMoney(t.price, t.currency)}` : `${t.shares} 股 × ${fmtMoney(t.price, t.currency)}`}
+                      {t.type === 'dividend'
+                        ? `每股 ${fmtMoney(t.price, t.currency)}`
+                        : t.type === 'split'
+                          ? `股数 ${t.shares > 0 ? '+' : ''}${t.shares}（成本摊薄）`
+                          : `${t.shares} 股 × ${fmtMoney(t.price, t.currency)}`}
                     </div>
                     {isBuy && lot && (
                       lot.remaining <= 0 ? (

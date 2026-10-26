@@ -18,6 +18,7 @@ import type {
   Security,
   InvestTxn,
   SyncConfig,
+  CostBasis,
 } from '@/types'
 
 type NewLiability = Omit<Liability, 'id' | 'created_at' | 'updated_at'>
@@ -61,6 +62,12 @@ interface AppState extends InitialState {
   setDefaultCurrency: (c: Currency) => void
   setTheme: (t: ThemeMode) => void
   setCashOpening: (n: number) => void
+  // 持仓成本口径：actual = 真实成本（默认），amortized = 摊薄成本（扣累计分红）
+  setCostBasis: (b: CostBasis) => void
+  // 分红助手：记录上次静默检查时间（节流，7 天内不重复请求）
+  setDividendScanAt: (iso: string) => void
+  // 分红助手：忽略 / 取消忽略某条分红（键 = 证券ID|除权日|类型）
+  toggleDividendIgnored: (key: string) => void
 
   setPin: (pin: string) => void
   verifyPin: (pin: string) => boolean
@@ -277,6 +284,18 @@ export const useStore = create<AppState>()(
       setCashOpening: (n) =>
         set((s) => ({ settings: { ...s.settings, cashOpening: n } })),
 
+      setCostBasis: (b) => set((s) => ({ settings: { ...s.settings, costBasis: b } })),
+
+      setDividendScanAt: (iso) =>
+        set((s) => ({ settings: { ...s.settings, dividendScanAt: iso } })),
+
+      toggleDividendIgnored: (key) =>
+        set((s) => {
+          const cur = s.settings.dividendIgnored ?? []
+          const next = cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]
+          return { settings: { ...s.settings, dividendIgnored: next } }
+        }),
+
       setPin: (pin) =>
         set((s) => ({
           settings: { ...s.settings, pinHash: hashPin(pin), appLockEnabled: true },
@@ -381,7 +400,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'xiaojinku-store',
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => idbStorage),
       // 版本升级时补默认值/修正旧数据，避免缺字段或废弃枚举导致崩溃（保留其余数据）
       migrate: (persisted: any, version: number) => {
@@ -408,6 +427,11 @@ export const useStore = create<AppState>()(
             persisted.settings.lastBackupAt = persisted.settings.sync.lastBackupAt
           }
           delete persisted.settings.sync.lastBackupAt
+        }
+        // v6：持仓成本口径 + 分红助手（分红现金计入净资产依赖这两项，缺字段需补默认值）
+        if (version < 6 && persisted?.settings) {
+          persisted.settings.costBasis = persisted.settings.costBasis ?? 'actual'
+          persisted.settings.dividendIgnored = persisted.settings.dividendIgnored ?? []
         }
         return persisted
       },

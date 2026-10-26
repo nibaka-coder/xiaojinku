@@ -83,6 +83,12 @@ export interface Settings {
   currencySymbolCNY: string
   theme: ThemeMode
   cashOpening: number // 期初现金余额（CNY）
+  // 持仓成本口径：默认 actual（真实成本）
+  costBasis?: CostBasis
+  // 分红助手：上次静默检查时间 ISO（节流用，7 天内不重复请求）
+  dividendScanAt?: string
+  // 分红助手：用户标记「忽略」的分红去重键列表（键 = 证券ID|除权日|类型）
+  dividendIgnored?: string[]
   sync: SyncConfig
   lastBackupAt?: string // 最近一次导出备份时间 ISO（用于备份提醒）
   // 本账本是否仍是「未动过的示例数据」。新设备首次打开会带示例数据，
@@ -111,7 +117,17 @@ export interface Security {
 }
 
 // 投资交易类型：买入 / 卖出 / 分红（原「建仓」已并入买入，旧数据迁移为 buy）
-export type InvestTxnType = 'buy' | 'sell' | 'dividend'
+// 投资交易类型：买入 / 卖出 / 分红 / 送股拆股
+// 原「建仓」已并入买入，旧数据迁移为 buy
+// split（送股 / 转增 / 拆股）：只增减股数、不动总成本 → 每股成本自动摊薄
+//   送股填正数（如 10 送 10，持 1000 股填 1000），合股/缩股填负数
+export type InvestTxnType = 'buy' | 'sell' | 'dividend' | 'split'
+
+// 持仓成本口径：
+// actual    = 真实成本（口径 A）：成本就是投入的钱，分红单列为收益
+// amortized = 摊薄成本（口径 B）：成本 = 真实成本 − 累计分红到手（券商 App 的「保本价」）
+// 两者净资产完全相同，差别只在持仓页「成本 / 浮动盈亏」怎么显示
+export type CostBasis = 'actual' | 'amortized'
 
 // 投资交易台账：唯一数据源，持仓由它推导
 export interface InvestTxn {
