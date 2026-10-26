@@ -6,6 +6,8 @@ import { pull } from '@/lib/syncService'
 import {
   cashBalance,
   creditLiability,
+  investCashBalance,
+  investSummary,
   liabilitiesTotal,
   liabilityCurrentBalance,
   netWorth,
@@ -36,17 +38,41 @@ export default function Settings() {
   const setCostBasis = useStore((s) => s.setCostBasis)
   const costBasis = useStore((s) => s.settings.costBasis ?? 'actual')
   const setCashOpening = useStore((s) => s.setCashOpening)
+  const setInvestCashOpening = useStore((s) => s.setInvestCashOpening)
+  const securities = useStore((s) => s.securities)
+  const investTxns = useStore((s) => s.investTxns)
   const addLiability = useStore((s) => s.addLiability)
   const updateLiability = useStore((s) => s.updateLiability)
   const deleteLiability = useStore((s) => s.deleteLiability)
 
   const cashOpening = settings.cashOpening
+  const investCashOpening = settings.investCashOpening ?? 0
+  const fxRate = settings.fxRate.rate
+  const hkdRate = settings.hkdRate.rate
   const cash = useMemo(() => cashBalance(transactions, cashOpening), [transactions, cashOpening])
+  const investCash = useMemo(
+    () => investCashBalance(transactions, investTxns, fxRate, hkdRate, Infinity, investCashOpening),
+    [transactions, investTxns, fxRate, hkdRate, investCashOpening]
+  )
+  const investMarket = useMemo(
+    () => investSummary(securities, investTxns, fxRate, hkdRate).marketCNY,
+    [securities, investTxns, fxRate, hkdRate]
+  )
   const credit = useMemo(() => creditLiability(transactions), [transactions])
   const liabTotal = useMemo(() => liabilitiesTotal(liabilities, transactions), [liabilities, transactions])
   const nw = useMemo(
-    () => netWorth(transactions, liabilities, cashOpening),
-    [transactions, liabilities, cashOpening]
+    () =>
+      netWorth(
+        transactions,
+        liabilities,
+        cashOpening,
+        securities,
+        investTxns,
+        fxRate,
+        hkdRate,
+        investCashOpening
+      ),
+    [transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate, investCashOpening]
   )
 
   return (
@@ -57,6 +83,8 @@ export default function Settings() {
       <section className="card space-y-3">
         <h2 className="font-medium text-main">资产负债</h2>
         <Row label="现金余额" value={fmtMoney(cash, 'CNY')} />
+        <Row label="券商现金" value={fmtMoney(investCash, 'CNY')} />
+        <Row label="投资市值" value={fmtMoney(investMarket, 'CNY')} />
         <Row label="信用贷款负债" value={fmtMoney(credit, 'CNY')} valueColor="var(--credit)" />
         <Row label="长期负债（车贷等）" value={fmtMoney(liabTotal, 'CNY')} valueColor="var(--danger)" />
         <div className="border-t border-soft pt-3 flex justify-between items-center">
@@ -72,6 +100,20 @@ export default function Settings() {
             onChange={(e) => setCashOpening(Number(e.target.value) || 0)}
           />
         </div>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-sm text-sub">券商期初现金</span>
+          <input
+            type="number"
+            className="input !w-32 text-right"
+            value={investCashOpening}
+            onChange={(e) => setInvestCashOpening(Number(e.target.value) || 0)}
+          />
+        </div>
+        <p className="text-xs text-faint">
+          券商期初现金 = 你开始记账前就已经躺在券商账户里的本金（转账 − 买入 + 卖出 + 分红 的推导起点）。
+          只有当「券商现金」显示为负数、且你的银行卡余额与实际相符时才需要填。
+          <span className="text-sub">这笔钱不要重复填进「期初现金余额」，否则净资产会多算一份。</span>
+        </p>
       </section>
 
       {/* 长期负债管理 */}

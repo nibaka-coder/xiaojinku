@@ -47,19 +47,30 @@ export default function Overview() {
   const fxRate = useStore((s) => s.settings.fxRate.rate)
   const hkdRate = useStore((s) => s.settings.hkdRate.rate)
   const costBasis = useStore((s) => s.settings.costBasis ?? 'actual')
+  const investCashOpening = useStore((s) => s.settings.investCashOpening ?? 0)
 
   const curYm = ym(new Date())
   const credit = useMemo(() => creditLiability(transactions), [transactions])
   const liab = useMemo(() => liabilitiesTotal(liabilities, transactions), [liabilities, transactions])
   const nw = useMemo(
-    () => netWorth(transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate),
-    [transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate]
+    () =>
+      netWorth(
+        transactions,
+        liabilities,
+        cashOpening,
+        securities,
+        investTxns,
+        fxRate,
+        hkdRate,
+        investCashOpening
+      ),
+    [transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate, investCashOpening]
   )
   const cash = useMemo(() => cashBalance(transactions, cashOpening), [transactions, cashOpening])
   // 券商账户现金（含未回收的分红）：不计入的话，除权后净资产会凭空少一笔
   const investCash = useMemo(
-    () => investCashBalance(transactions, investTxns, fxRate, hkdRate),
-    [transactions, investTxns, fxRate, hkdRate]
+    () => investCashBalance(transactions, investTxns, fxRate, hkdRate, Infinity, investCashOpening),
+    [transactions, investTxns, fxRate, hkdRate, investCashOpening]
   )
   const investM = useMemo(
     () => investSummary(securities, investTxns, fxRate, hkdRate, costBasis).marketCNY,
@@ -103,9 +114,20 @@ export default function Overview() {
         securities,
         investTxns,
         fxRate,
-        hkdRate
+        hkdRate,
+        investCashOpening
       ),
-    [nwMonths, transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate]
+    [
+      nwMonths,
+      transactions,
+      liabilities,
+      cashOpening,
+      securities,
+      investTxns,
+      fxRate,
+      hkdRate,
+      investCashOpening,
+    ]
   )
   const nwYearDelta = useMemo(() => {
     if (nwTrend.length < 2) return 0

@@ -73,9 +73,11 @@ export function investCashBalance(
   investTxns: InvestTxn[],
   fxRate: number,
   hkdRate: number = 0.915,
-  endTs = Infinity
+  endTs = Infinity,
+  // 券商期初现金：记账开始前就躺在券商账户里的本金（不属银行卡期初现金）
+  opening = 0
 ): number {
-  let c = 0
+  let c = opening
   for (const t of txns) {
     if (endTs !== Infinity && new Date(t.datetime).getTime() > endTs) continue
     if (!t.is_investment_transfer) continue
@@ -101,11 +103,12 @@ export function netWorth(
   securities: Security[] = [],
   investTxns: InvestTxn[] = [],
   fxRate: number = 7.1,
-  hkdRate: number = 0.915
+  hkdRate: number = 0.915,
+  investCashOpening: number = 0
 ): number {
   return (
     cashBalance(txns, cashOpening) +
-    investCashBalance(txns, investTxns, fxRate, hkdRate) +
+    investCashBalance(txns, investTxns, fxRate, hkdRate, Infinity, investCashOpening) +
     investSummary(securities, investTxns, fxRate, hkdRate).marketCNY -
     creditLiability(txns) -
     liabilitiesTotal(liabilities, txns)
@@ -580,12 +583,13 @@ export function netWorthTrend(
   securities: Security[],
   investTxns: InvestTxn[],
   fxRate: number,
-  hkdRate: number = 0.915
+  hkdRate: number = 0.915,
+  investCashOpening: number = 0
 ): NetWorthPoint[] {
   return months.map((m) => {
     const { end } = monthRange(m)
     const cash = cashBalance(txns, cashOpening, end)
-    const investCash = investCashBalance(txns, investTxns, fxRate, hkdRate, end)
+    const investCash = investCashBalance(txns, investTxns, fxRate, hkdRate, end, investCashOpening)
     const debt = creditLiability(txns, end) + liabilitiesTotal(liabilities, txns, end)
     let invest = 0
     for (const s of securities) {

@@ -214,6 +214,36 @@ console.log('\n=== A8) A股差别化红利税分档 ===')
   ok('ETF → 免税', near(defaultTaxRate({ ...SEC, market: 'etf' }, base, base), 0))
 }
 
+console.log('\n=== A9) 券商期初现金（investCashOpening）===')
+{
+  // 场景：记账开始前券商里已有 5.7 万本金，转账只记了转入 6.3 万，却买了 12 万
+  // → 不加期初时券商现金 = 63000 - 120000 = -57000（看着吓人，其实是漏算的资产）
+  const t = [
+    mkTxn({ type: 'expense', amount: 63000, is_investment_transfer: true }),
+  ]
+  const inv = [mkInv({ type: 'buy', shares: 1000, price: 120, fee: 0 })]
+  const noOpening = C.investCashBalance(t, inv, FX, HKD)
+  ok('未填期初 → 券商现金为负', near(noOpening, -57000), `实际 ${noOpening}`)
+
+  const withOpening = C.investCashBalance(t, inv, FX, HKD, Infinity, 57000)
+  ok('填 5.7 万期初 → 券商现金归零', near(withOpening, 0), `实际 ${withOpening}`)
+
+  // 净资产：期初只进一次，且银行卡期初不含这笔钱 → 净资产应恰好 +5.7 万
+  const sec = { ...SEC, id: 's1', currency: 'CNY', lastPrice: 120 }
+  const nw0 = C.netWorth(t, [], 200000, [sec], inv, FX, HKD, 0)
+  const nw1 = C.netWorth(t, [], 200000, [sec], inv, FX, HKD, 57000)
+  ok('净资产随期初现金等额增加', near(nw1 - nw0, 57000), `差值 ${nw1 - nw0}`)
+
+  // 走势：每一期都应含期初（这笔钱从一开始就在券商里）
+  const months = ['2026-01', '2026-02']
+  const tr = C.netWorthTrend(months, t, [], 200000, [sec], inv, FX, HKD, 57000)
+  ok('走势每期都含券商期初', tr.every((p) => p.net === nw1), JSON.stringify(tr.map((p) => p.net)))
+
+  // 期初现金与转账/买卖互不干扰：再补一笔转入，只加不覆盖
+  const t2 = [...t, mkTxn({ type: 'expense', amount: 10000, is_investment_transfer: true })]
+  ok('期初 + 新转账叠加正确', near(C.investCashBalance(t2, inv, FX, HKD, Infinity, 57000), 10000))
+}
+
 // ===== Part B：真渲染 =====
 console.log('\n=== B) 真渲染（dist 单文件，无头 Chrome）===')
 const root = path.resolve('dist')
@@ -288,6 +318,8 @@ ok('分红助手标题存在', divText.includes('分红助手'), divText.slice(0
 await page.goto(base + '?t=' + Date.now() + '#/settings', { waitUntil: 'networkidle2' })
 await new Promise((r) => setTimeout(r, 1200))
 const setText = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
+ok('设置页有「券商期初现金」', setText.includes('券商期初现金'))
+ok('设置页资产负债含券商现金与市值', setText.includes('券商现金') && setText.includes('投资市值'))
 ok('设置页有「持仓成本口径」', setText.includes('持仓成本口径'))
 ok('设置页有「真实成本」选项', setText.includes('真实成本'))
 ok('设置页有「摊薄成本」选项', setText.includes('摊薄成本'))

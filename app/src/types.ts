@@ -83,6 +83,9 @@ export interface Settings {
   currencySymbolCNY: string
   theme: ThemeMode
   cashOpening: number // 期初现金余额（CNY）
+  // 券商期初现金（CNY）：开始记账前就已经在券商账户里的自有资金。
+  // 只填「不属于银行卡期初现金」的那部分——若已算进 cashOpening 会造成重复计算。
+  investCashOpening?: number
   // 持仓成本口径：默认 actual（真实成本）
   costBasis?: CostBasis
   // 分红助手：上次静默检查时间 ISO（节流用，7 天内不重复请求）

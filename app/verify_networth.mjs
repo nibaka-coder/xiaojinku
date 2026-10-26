@@ -28,16 +28,20 @@ console.log('OVERVIEW has 投资市值:', ov.includes('投资市值'))
 const nums = ov.match(/¥[\d,]+\.\d{2}/g) || []
 console.log('OVERVIEW first numbers:', nums.slice(0, 6).join('  '))
 // 找 净资产 / 现金 / 投资市值 / 信用负债 / 长期负债 对应的数字
+// 概览格子用 compact 显示（如 ¥8.5万），正则必须认单位，否则会把「1.01万」读成 1.01
 function pick(label) {
   const i = ov.indexOf(label)
   if (i < 0) return null
-  const seg = ov.slice(i, i + 40)
-  const m = seg.match(/¥([\d,]+\.\d{2})/)
-  return m ? m[1] : null
+  const seg = ov.slice(i, i + 60)
+  const m = seg.match(/¥([\d,]+(?:\.\d+)?)\s*(万|亿)?/)
+  if (!m) return null
+  const v = parseFloat(m[1].replace(/,/g, '')) * (m[2] === '万' ? 10000 : m[2] === '亿' ? 1e8 : 1)
+  return v.toFixed(2)
 }
 const nw = pick('净资产'), cash = pick('现金'), icash = pick('券商现金'), inv = pick('投资市值'), credit = pick('信用负债'), liab = pick('长期负债')
 console.log('净资产=', nw, '现金=', cash, '券商现金=', icash, '投资市值=', inv, '信用=', credit, '长期=', liab)
 const parse = s => s ? parseFloat(s.replace(/,/g, '')) : NaN
+const nearEq = (a, b, eps = 1) => Math.abs(a - b) < eps
 const sum = parse(cash) + parse(icash) + parse(inv) - parse(credit) - parse(liab)
 console.log('现金+券商现金+投资−信用−长期 =', sum.toFixed(2), '| 净资产 =', parse(nw).toFixed(2), '（单位不一致，仅供肉眼参考）')
 
@@ -64,8 +68,18 @@ await new Promise(r => setTimeout(r, 400))
 await page.goto(base + 'index.html#/', { waitUntil: 'networkidle2' })
 await new Promise(r => setTimeout(r, 800))
 const ov2 = await txt()
-const cash2 = (() => { const i = ov2.indexOf('现金'); const m = ov2.slice(i, i+40).match(/¥([\d,]+\.\d{2})/); return m?m[1]:null })()
-const expOfMonth = (() => { const i = ov2.indexOf('本月支出'); const m = ov2.slice(i, i+60).match(/¥([\d,]+\.\d{2})/); return m?m[1]:null })()
-console.log('after transfer: 现金=', cash2, '(应 =', (parse(cash)-1000).toFixed(2), ')', '| 本月支出=', expOfMonth)
+const pick2 = (label) => {
+  const i = ov2.indexOf(label)
+  if (i < 0) return null
+  const m = ov2.slice(i, i + 60).match(/¥([\d,]+(?:\.\d+)?)\s*(万|亿)?/)
+  if (!m) return null
+  return (parseFloat(m[1].replace(/,/g, '')) * (m[2] === '万' ? 10000 : m[2] === '亿' ? 1e8 : 1)).toFixed(2)
+}
+const cash2 = pick2('现金')
+const expOfMonth = pick2('本月支出')
+const expBefore = pick('本月支出')
+// 概览格子是 compact（万）显示，精度到 0.1 万；只断言方向与「支出不受影响」
+console.log('after transfer: 现金=', cash2, '(转账前 =', cash, ')', '| 本月支出=', expOfMonth, '(转账前 =', expBefore, ')')
+console.log('现金下降:', parse(cash2) < parse(cash) ? 'PASS' : 'FAIL', '| 转账不计入本月支出:', nearEq(parse(expOfMonth), parse(expBefore)) ? 'PASS' : 'FAIL')
 console.log('JS_ERRORS:', errs.length ? errs.join(' | ') : 'none')
 await browser.close(); server.close()
