@@ -2,36 +2,34 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { fmtMoney } from '@/lib/money'
-import { deriveLots, dividendAmount } from '@/lib/calc'
-import { fmtDate } from '@/lib/date'
-import type { InvestTxnType } from '@/types'
+import { deriveLots, sharesHeldAt } from '@/lib/calc'
+import { fmtDate, nowLocalISO } from '@/lib/date'
+import { buildPending, fetchPlansFor } from '@/lib/dividendScan'
+import type { InvestTxn, InvestTxnType } from '@/types'
 import Modal from '@/components/Modal'
 
+// 分红不在这里展示 —— 统一由「分红助手」检测并入账，避免同一笔分红被记两次
 const TXN_LABEL: Record<InvestTxnType, string> = {
   buy: '买入',
   sell: '卖出',
   dividend: '分红',
   split: '送股/拆股',
 }
-const TXN_COLOR: Record<InvestTxnType, string> = {
-  buy: 'var(--accent-strong)',
-  sell: 'var(--sub)',
-  dividend: 'var(--income)',
-  split: 'var(--sub)',
+const TXN_TONE: Record<InvestTxnType, { bg: string; fg: string }> = {
+  buy: { bg: 'var(--accent-soft)', fg: 'var(--accent-strong)' },
+  sell: { bg: 'var(--card-2)', fg: 'var(--sub)' },
+  dividend: { bg: 'var(--card-2)', fg: 'var(--income)' },
+  split: { bg: 'var(--card-2)', fg: 'var(--sub)' },
 }
 
 const FILTERS: { key: InvestTxnType | 'all'; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'buy', label: '买入' },
   { key: 'sell', label: '卖出' },
-  { key: 'dividend', label: '分红' },
-  { key: 'split', label: '送股/拆股' },
+  { key: 'split', label: '送股' },
 ]
 
 function txnAmount(t: { type: InvestTxnType; shares: number; price: number; fee: number }): number {
-  // 分红显示「到手」= 税前 − 代扣税（fee 存的是代扣税）
-  if (t.type === 'dividend') return dividendAmount(t)
-  // 送股 / 拆股只增减股数，不涉及金额
   if (t.type === 'split') return 0
   return t.shares * t.price + t.fee
 }
@@ -44,6 +42,19 @@ function sign(v: number): string {
   return v >= 0 ? '+' : ''
 }
 
+// 月份分组：按交易时间倒序，同月连续，直接线性切段
+function groupByMonth(list: InvestTxn[]): { ym: string; items: InvestTxn[] }[] {
+  const out: { ym: string; items: InvestTxn[] }[] = []
+  for (const t of list) {
+    const k = t.datetime.slice(0, 7)
+    const last = out[out.length - 1]
+    if (last && last.ym === k) last.items.push(t)
+    else out.push({ ym: k, items: [t] })
+  }
+  return out
+}
+const monthTitle = (ym: string) => `${ym.slice(0, 4)}年${Number(ym.slice(5, 7))}月`
+
 export default function Trades() {
   const navigate = useNavigate()
   const securities = useStore((s) => s.securities)
@@ -52,10 +63,13 @@ export default function Trades() {
   const hkdRate = useStore((s) => s.settings.hkdRate.rate)
   const deleteInvestTxn = useStore((s) => s.deleteInvestTxn)
   const refreshQuotes = useStore((s) => s.refreshQuotes)
+  const setDividendScanAt = useStore((s) => s.setDividendScanAt)
+  const ignored = useStore((s) => s.settings.dividendIgnored ?? [])
   const [filter, setFilter] = useState<InvestTxnType | 'all'>('all')
   const [secFilter, setSecFilter] = useState('all')
   const [delId, setDelId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [pendingCount, setPendingCount] = useState<number | null>(null)
 
   const secMap = useMemo(() => new Map(securities.map((s) => [s.id, s])), [securities])
   const derived = useMemo(
@@ -64,20 +78,37 @@ export default function Trades() {
   )
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
+  // 刷新行情时顺带强制重新检测分红：已入账的会自动去重，不会重复提醒
+  const scanDividends = async () => {
+    try {
+      const heldSecs = securities.filter((s) => sharesHeldAt(s.id, investTxns, Date.now()) > 0)
+      if (!heldSecs.length) return
+      const plans = await fetchPlansFor(heldSecs, 2, true)
+      const pend = buildPending(heldSecs, investTxns, plans, fxRate, hkdRate, ignored)
+      setPendingCount(pend.length)
+      setDividendScanAt(nowLocalISO())
+    } catch {
+      /* 检测失败不影响刷新行情 */
+    }
+  }
+
   const onRefresh = async () => {
     setRefreshing(true)
     await refreshQuotes(true)
+    await scanDividends()
     setRefreshing(false)
   }
 
   const list = useMemo(
     () =>
       investTxns
+        .filter((t) => t.type !== 'dividend')
         .filter((t) => (filter === 'all' ? true : t.type === filter))
         .filter((t) => (secFilter === 'all' ? true : t.security_id === secFilter))
         .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime()),
     [investTxns, filter, secFilter]
   )
+  const groups = useMemo(() => groupByMonth(list), [list])
 
   const del = () => {
     if (delId) deleteInvestTxn(delId)
@@ -98,7 +129,18 @@ export default function Trades() {
         </div>
       </div>
 
-      {/* 筛选 */}
+      {/* 刷新后发现的待入账分红：只提示，不静默入账 */}
+      {pendingCount !== null && pendingCount > 0 && (
+        <button
+          className="w-full text-left text-sm px-3 py-2.5 rounded-xl"
+          style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
+          onClick={() => navigate('/invest/dividends')}
+        >
+          💰 发现 {pendingCount} 笔分红待入账 · 去确认 →
+        </button>
+      )}
+
+      {/* 筛选：分红不在此处，统一走分红助手 */}
       <div className="flex flex-wrap gap-2 text-sm">
         {FILTERS.map((f) => (
           <button
@@ -122,123 +164,137 @@ export default function Trades() {
       {list.length === 0 ? (
         <div className="card text-center py-12 text-sub">暂无交易记录</div>
       ) : (
-        <div className="space-y-2">
-          {list.map((t) => {
-            const sec = secMap.get(t.security_id)
-            const isBuy = t.type === 'buy'
-            const fx = t.currency === 'USD' ? fxRate : t.currency === 'HKD' ? hkdRate : 1
-            const cur = isBuy ? sec?.lastPrice ?? sec?.manualPrice : undefined
-            // 该笔买入相对现价的浮动盈亏（原币）
-            const plOrig = cur !== undefined ? (cur - t.price) * t.shares - t.fee : 0
-            const costOrig = t.price * t.shares + t.fee
-            const plPct = costOrig > 0 ? (plOrig / costOrig) * 100 : 0
-            const match = t.type === 'sell' ? derived.sells[t.id] : undefined
-            const lot = isBuy ? (derived.lots[t.security_id] ?? []).find((l) => l.lotId === t.id) : undefined
-            const expandedThis = !!expanded[t.id]
-            const sellCost = match ? match.matched.reduce((a, m) => a + m.shares * m.costPerShare, 0) : 0
-            const sellPct = sellCost > 0 ? (match!.realizedPL / sellCost) * 100 : 0
-            return (
-              <div key={t.id} className="card-2">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs font-medium shrink-0"
-                    style={{ color: TXN_COLOR[t.type], background: 'var(--card-2)' }}
-                  >
-                    {TXN_LABEL[t.type]}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-main truncate">{sec?.name ?? '已删除证券'}</div>
-                    <div className="text-xs text-faint">
-                      {fmtDate(t.datetime)} ·{' '}
-                      {t.type === 'dividend'
-                        ? `每股 ${fmtMoney(t.price, t.currency)}`
-                        : t.type === 'split'
-                          ? `股数 ${t.shares > 0 ? '+' : ''}${t.shares}（成本摊薄）`
-                          : `${t.shares} 股 × ${fmtMoney(t.price, t.currency)}`}
-                    </div>
-                    {isBuy && lot && (
-                      lot.remaining <= 0 ? (
-                        <div className="text-xs" style={{ color: colorOf(derived.lotRealized[lot.lotId] ?? 0) }}>
-                          已清仓 · 共{sign(derived.lotRealized[lot.lotId] ?? 0)}
-                          {fmtMoney(derived.lotRealized[lot.lotId] ?? 0, t.currency)}（≈
-                          {fmtMoney((derived.lotRealized[lot.lotId] ?? 0) * fx, 'CNY')}）
-                        </div>
-                      ) : (
-                        <div className="text-xs text-faint">持仓中（剩 {lot.remaining} 股）</div>
-                      )
-                    )}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div
-                      className="font-semibold"
-                      style={{ color: t.type === 'sell' || t.type === 'dividend' ? 'var(--income)' : 'var(--text)' }}
-                    >
-                      {fmtMoney(txnAmount(t), t.currency)}
-                    </div>
-                    {t.type === 'sell' && match ? (
-                      <div>
-                        <div className="text-xs" style={{ color: colorOf(match.realizedPL) }}>
-                          已实现 {sign(match.realizedPL)}
-                          {fmtMoney(match.realizedPL, t.currency)}（{sign(sellPct)}
-                          {sellPct.toFixed(1)}%）
-                        </div>
-                        <div className="text-xs text-faint">≈{fmtMoney(match.realizedPLCNY, 'CNY')}</div>
-                      </div>
-                    ) : isBuy ? (
-                      cur !== undefined ? (
-                        <div>
-                          <div className="text-xs" style={{ color: colorOf(plOrig) }}>
-                            现价盈亏 {sign(plOrig)}
-                            {fmtMoney(plOrig, t.currency)}（{sign(plPct)}
-                            {plPct.toFixed(1)}%）
-                          </div>
-                          <div className="text-xs text-faint">
-                            ≈{fmtMoney(plOrig * fx, 'CNY')} · 现价 {fmtMoney(cur, t.currency)}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-faint">现价 — 未更新</div>
-                      )
-                    ) : (
-                      <div className="text-xs text-faint">≈{fmtMoney(txnAmount(t) * fx, 'CNY')}</div>
-                    )}
-                  </div>
-                  {t.type === 'sell' && match && (
-                    <button
-                      className="text-faint text-lg px-1 shrink-0"
-                      onClick={() => setExpanded((v) => ({ ...v, [t.id]: !v[t.id] }))}
-                      aria-label="展开"
-                    >
-                      {expandedThis ? '▾' : '▸'}
-                    </button>
-                  )}
-                  <button
-                    className="text-faint text-lg px-1 shrink-0"
-                    onClick={() => setDelId(t.id)}
-                    aria-label="删除"
-                  >
-                    🗑
-                  </button>
-                </div>
-                {t.type === 'sell' && match && expandedThis && (
-                  <div className="mt-2 pt-2 border-t border-soft text-xs text-faint space-y-1">
-                    <div>对应买入批次：</div>
-                    {match.matched.map((m) => {
-                      const ml = (derived.lots[t.security_id] ?? []).find((l) => l.lotId === m.lotId)
-                      return (
-                        <div key={m.lotId} className="flex justify-between">
-                          <span>
-                            {m.shares} 股 @ {fmtMoney(m.costPerShare, t.currency)}
-                          </span>
-                          <span>{ml ? ml.openedAt.slice(0, 10) : ''}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+        <div className="space-y-4">
+          {groups.map((g) => (
+            <div key={g.ym} className="space-y-2">
+              <div className="flex items-baseline justify-between px-1">
+                <span className="text-xs font-medium text-sub">{monthTitle(g.ym)}</span>
+                <span className="text-xs text-faint">{g.items.length} 笔</span>
               </div>
-            )
-          })}
+              {g.items.map((t) => {
+                const sec = secMap.get(t.security_id)
+                const isBuy = t.type === 'buy'
+                const fx = t.currency === 'USD' ? fxRate : t.currency === 'HKD' ? hkdRate : 1
+                const cur = isBuy ? sec?.lastPrice ?? sec?.manualPrice : undefined
+                // 该笔买入相对现价的浮动盈亏（原币）
+                const plOrig = cur !== undefined ? (cur - t.price) * t.shares - t.fee : 0
+                const costOrig = t.price * t.shares + t.fee
+                const plPct = costOrig > 0 ? (plOrig / costOrig) * 100 : 0
+                const match = t.type === 'sell' ? derived.sells[t.id] : undefined
+                const lot = isBuy
+                  ? (derived.lots[t.security_id] ?? []).find((l) => l.lotId === t.id)
+                  : undefined
+                const expandedThis = !!expanded[t.id]
+                const sellCost = match
+                  ? match.matched.reduce((a, m) => a + m.shares * m.costPerShare, 0)
+                  : 0
+                const sellPct = sellCost > 0 ? (match!.realizedPL / sellCost) * 100 : 0
+                const tone = TXN_TONE[t.type]
+                return (
+                  <div key={t.id} className="card-2">
+                    {/* 第一层：类型 + 证券 + 日期 */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="px-2 py-0.5 rounded-full text-xs font-medium shrink-0"
+                          style={{ color: tone.fg, background: tone.bg }}
+                        >
+                          {TXN_LABEL[t.type]}
+                        </span>
+                        <span className="text-main truncate">{sec?.name ?? '已删除证券'}</span>
+                        {sec && <span className="text-xs text-faint shrink-0">{sec.code}</span>}
+                      </div>
+                      <span className="text-xs text-faint shrink-0">{fmtDate(t.datetime)}</span>
+                    </div>
+
+                    {/* 第二层：数量 × 价格 → 金额 */}
+                    <div className="flex items-baseline justify-between gap-3 mt-1.5">
+                      <span className="text-xs text-sub">
+                        {t.type === 'split'
+                          ? `股数 ${t.shares > 0 ? '+' : ''}${t.shares} · 成本摊薄`
+                          : `${t.shares} 股 × ${fmtMoney(t.price, t.currency)}`}
+                      </span>
+                      <span className="font-semibold tabular-nums shrink-0">
+                        {t.type === 'split' ? '—' : fmtMoney(txnAmount(t), t.currency)}
+                      </span>
+                    </div>
+
+                    {/* 第三层：盈亏 / 状态 + 操作 */}
+                    <div className="flex items-end justify-between gap-2 mt-1.5">
+                      <div className="min-w-0 text-xs">
+                        {t.type === 'sell' && match ? (
+                          <span style={{ color: colorOf(match.realizedPL) }}>
+                            已实现 {sign(match.realizedPL)}
+                            {fmtMoney(match.realizedPL, t.currency)}（{sign(sellPct)}
+                            {sellPct.toFixed(1)}% · ≈{fmtMoney(match.realizedPLCNY, 'CNY')}）
+                          </span>
+                        ) : isBuy ? (
+                          cur !== undefined ? (
+                            <span style={{ color: colorOf(plOrig) }}>
+                              现价盈亏 {sign(plOrig)}
+                              {fmtMoney(plOrig, t.currency)}（{sign(plPct)}
+                              {plPct.toFixed(1)}% · ≈{fmtMoney(plOrig * fx, 'CNY')}）
+                            </span>
+                          ) : (
+                            <span className="text-faint">现价未更新</span>
+                          )
+                        ) : (
+                          <span className="text-faint">
+                            {lot && lot.remaining <= 0
+                              ? '该批次已清仓'
+                              : lot
+                                ? `持仓中 · 剩 ${lot.remaining} 股`
+                                : '—'}
+                          </span>
+                        )}
+                        {isBuy && lot && lot.remaining <= 0 && (
+                          <span className="ml-1" style={{ color: colorOf(derived.lotRealized[lot.lotId] ?? 0) }}>
+                            共{sign(derived.lotRealized[lot.lotId] ?? 0)}
+                            {fmtMoney(derived.lotRealized[lot.lotId] ?? 0, t.currency)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {t.type === 'sell' && match && (
+                          <button
+                            className="text-faint text-base px-1"
+                            onClick={() => setExpanded((v) => ({ ...v, [t.id]: !v[t.id] }))}
+                            aria-label="展开批次"
+                          >
+                            {expandedThis ? '▾' : '▸'}
+                          </button>
+                        )}
+                        <button
+                          className="text-faint text-base px-1"
+                          onClick={() => setDelId(t.id)}
+                          aria-label="删除"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+
+                    {t.type === 'sell' && match && expandedThis && (
+                      <div className="mt-2 pt-2 border-t border-soft text-xs text-faint space-y-1">
+                        <div>对应买入批次：</div>
+                        {match.matched.map((m) => {
+                          const ml = (derived.lots[t.security_id] ?? []).find((l) => l.lotId === m.lotId)
+                          return (
+                            <div key={m.lotId} className="flex justify-between">
+                              <span>
+                                {m.shares} 股 @ {fmtMoney(m.costPerShare, t.currency)}
+                              </span>
+                              <span>{ml ? ml.openedAt.slice(0, 10) : ''}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
         </div>
       )}
 

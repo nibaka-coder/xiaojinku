@@ -8,7 +8,6 @@ import {
   liabilitiesTotal,
   netWorth,
   netWorthTrend,
-  investCashBalance,
   monthlySummary,
   periodSummary,
   investSummary,
@@ -47,31 +46,15 @@ export default function Overview() {
   const fxRate = useStore((s) => s.settings.fxRate.rate)
   const hkdRate = useStore((s) => s.settings.hkdRate.rate)
   const costBasis = useStore((s) => s.settings.costBasis ?? 'actual')
-  const investCashOpening = useStore((s) => s.settings.investCashOpening ?? 0)
 
   const curYm = ym(new Date())
   const credit = useMemo(() => creditLiability(transactions), [transactions])
   const liab = useMemo(() => liabilitiesTotal(liabilities, transactions), [liabilities, transactions])
   const nw = useMemo(
-    () =>
-      netWorth(
-        transactions,
-        liabilities,
-        cashOpening,
-        securities,
-        investTxns,
-        fxRate,
-        hkdRate,
-        investCashOpening
-      ),
-    [transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate, investCashOpening]
+    () => netWorth(transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate),
+    [transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate]
   )
   const cash = useMemo(() => cashBalance(transactions, cashOpening), [transactions, cashOpening])
-  // 券商账户现金（含未回收的分红）：不计入的话，除权后净资产会凭空少一笔
-  const investCash = useMemo(
-    () => investCashBalance(transactions, investTxns, fxRate, hkdRate, Infinity, investCashOpening),
-    [transactions, investTxns, fxRate, hkdRate, investCashOpening]
-  )
   const investM = useMemo(
     () => investSummary(securities, investTxns, fxRate, hkdRate, costBasis).marketCNY,
     [securities, investTxns, fxRate, hkdRate, costBasis]
@@ -114,20 +97,9 @@ export default function Overview() {
         securities,
         investTxns,
         fxRate,
-        hkdRate,
-        investCashOpening
+        hkdRate
       ),
-    [
-      nwMonths,
-      transactions,
-      liabilities,
-      cashOpening,
-      securities,
-      investTxns,
-      fxRate,
-      hkdRate,
-      investCashOpening,
-    ]
+    [nwMonths, transactions, liabilities, cashOpening, securities, investTxns, fxRate, hkdRate]
   )
   const nwYearDelta = useMemo(() => {
     if (nwTrend.length < 2) return 0
@@ -205,15 +177,11 @@ export default function Overview() {
         <div className="text-2xl sm:text-3xl font-semibold mt-1 tracking-tight tabular-nums">
           {fmtMoney(nw, 'CNY')}
         </div>
-        {/* 手机 2 列（标签左 · 金额右），≥sm 恢复五列；五项相加 = 净资产 */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 mt-5 text-sm sm:grid-cols-5 sm:gap-2">
+        {/* 手机 2 列（标签左 · 金额右），≥sm 恢复四列；四项相加 = 净资产 */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 mt-5 text-sm sm:grid-cols-4 sm:gap-2">
           <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="opacity-80">现金</div>
             <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(cash, 'CNY', { compact: true })}</div>
-          </div>
-          <div className="flex items-baseline justify-between gap-2 sm:block">
-            <div className="opacity-80">券商现金</div>
-            <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(investCash, 'CNY', { compact: true })}</div>
           </div>
           <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="opacity-80">投资市值</div>
@@ -224,7 +192,7 @@ export default function Overview() {
             <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(credit, 'CNY', { compact: true })}</div>
           </div>
           {/* 手机端第五项占满整行，避免末尾留空格 */}
-          <div className="flex items-baseline justify-between gap-2 sm:block col-span-2 sm:col-span-1">
+          <div className="flex items-baseline justify-between gap-2 sm:block">
             <div className="opacity-80">长期负债</div>
             <div className="font-semibold tabular-nums sm:mt-0.5">{fmtMoney(liab, 'CNY', { compact: true })}</div>
           </div>

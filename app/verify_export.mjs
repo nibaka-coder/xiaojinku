@@ -42,8 +42,9 @@ const clickByText = async (text) => {
 let pass = 0, fail = 0
 const check = (name, cond) => { console.log((cond ? 'PASS' : 'FAIL') + ' - ' + name); cond ? pass++ : fail++ }
 
-await page.goto(base + FILE + '#/settings', { waitUntil: 'networkidle2' })
-await waitText('数据与隐私')
+// 设置页已改版：数据与备份在自己的子页
+await page.goto(base + FILE + '#/settings/data', { waitUntil: 'networkidle2' })
+await waitText('导出 JSON')
 await clickByText('导出 JSON')
 // 导出应弹出 JSON 模态框（即使下载被拦截，至少弹窗可复制）
 await waitText('复制全部', 6000)

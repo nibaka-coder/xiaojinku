@@ -88,7 +88,8 @@ for (let i = 0; i < 32; i++) {
 console.log('5) 刷新后按钮复位为「↻ 刷新行情」:', reset)
 
 // ---- 3) 设置页汇率按钮文案 + 提示 ----
-await page.goto(base + FILE + '#/settings', { waitUntil: 'networkidle2' })
+// 设置页已改版：汇率在自己的子页
+await page.goto(base + FILE + '#/settings/fx', { waitUntil: 'networkidle2' })
 txt = await waitText('汇率')
 console.log('6) 设置页有「↻ 刷新汇率」按钮:', txt.includes('刷新汇率'))
 console.log('7) 有「刷新行情也会一并刷新汇率」提示:', txt.includes('刷新行情') && txt.includes('汇率'))

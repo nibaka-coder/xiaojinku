@@ -62,7 +62,6 @@ interface AppState extends InitialState {
   setDefaultCurrency: (c: Currency) => void
   setTheme: (t: ThemeMode) => void
   setCashOpening: (n: number) => void
-  setInvestCashOpening: (n: number) => void
   // 持仓成本口径：actual = 真实成本（默认），amortized = 摊薄成本（扣累计分红）
   setCostBasis: (b: CostBasis) => void
   // 分红助手：记录上次静默检查时间（节流，7 天内不重复请求）
@@ -285,8 +284,6 @@ export const useStore = create<AppState>()(
       setCashOpening: (n) =>
         set((s) => ({ settings: { ...s.settings, cashOpening: n } })),
 
-      setInvestCashOpening: (n) =>
-        set((s) => ({ settings: { ...s.settings, investCashOpening: n } })),
 
       setCostBasis: (b) => set((s) => ({ settings: { ...s.settings, costBasis: b } })),
 

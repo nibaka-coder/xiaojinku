@@ -61,41 +61,10 @@ export function liabilitiesTotal(liabilities: Liability[], txns: Transaction[], 
     .reduce((s, l) => s + liabilityCurrentBalance(l, txns, endTs), 0)
 }
 
-// 投资账户现金（券商可取资金）—— 派生值，不存库
-// = 转账净额（转出 − 回收）− 买入支出 + 卖出回款 + 分红到手
-//
-// ⚠️ 与「回收」转账的去重关键：
-// 「回收」只是把钱从券商搬回银行卡 —— cashBalance 加 Y 的同时这里减 Y，两端相抵、总和守恒，
-// 一笔钱在任何阶段只被计一次，不会重复计入净资产。
-// 真正要防的是同一笔分红既进这里又被记成日常「收入」，本实现中分红只走 investTxns，不进 income。
-export function investCashBalance(
-  txns: Transaction[],
-  investTxns: InvestTxn[],
-  fxRate: number,
-  hkdRate: number = 0.915,
-  endTs = Infinity,
-  // 券商期初现金：记账开始前就躺在券商账户里的本金（不属银行卡期初现金）
-  opening = 0
-): number {
-  let c = opening
-  for (const t of txns) {
-    if (endTs !== Infinity && new Date(t.datetime).getTime() > endTs) continue
-    if (!t.is_investment_transfer) continue
-    // 转出（expense）：银行卡 → 券商，投资现金 +；回收（income）：券商 → 银行卡，投资现金 −
-    c += t.type === 'income' ? -t.amount : t.amount
-  }
-  for (const t of investTxns) {
-    if (endTs !== Infinity && new Date(t.datetime).getTime() > endTs) continue
-    const fx = t.currency === 'USD' ? fxRate : t.currency === 'HKD' ? hkdRate : 1
-    if (t.type === 'buy') c -= (t.shares * t.price + t.fee) * fx
-    else if (t.type === 'sell') c += (t.shares * t.price - t.fee) * fx
-    else if (t.type === 'dividend') c += dividendAmount(t) * fx
-  }
-  return c
-}
-
-// 净资产 = 银行卡现金 + 券商账户现金 + 投资市值 − 信用贷款负债 − 长期负债(车贷等)
-// 券商现金这一项不能省：分红进的是券商账户，若不计入，除权后净资产会凭空少一笔。
+// 净资产 = 银行卡现金 + 投资市值 − 信用贷款负债 − 长期负债(车贷等)
+// 注：券商账户里的可取现金（含已到账未转出的分红）不单独计入——
+// 分红若未转出、也未再买入，在「到账 → 转出/再投资」这段时间内净资产会暂少这一笔，
+// 一旦转出到银行卡或再买入即自动回补。这是刻意简化：不分拆券商账户，概览更清爽。
 export function netWorth(
   txns: Transaction[],
   liabilities: Liability[],
@@ -103,12 +72,10 @@ export function netWorth(
   securities: Security[] = [],
   investTxns: InvestTxn[] = [],
   fxRate: number = 7.1,
-  hkdRate: number = 0.915,
-  investCashOpening: number = 0
+  hkdRate: number = 0.915
 ): number {
   return (
     cashBalance(txns, cashOpening) +
-    investCashBalance(txns, investTxns, fxRate, hkdRate, Infinity, investCashOpening) +
     investSummary(securities, investTxns, fxRate, hkdRate).marketCNY -
     creditLiability(txns) -
     liabilitiesTotal(liabilities, txns)
@@ -583,13 +550,11 @@ export function netWorthTrend(
   securities: Security[],
   investTxns: InvestTxn[],
   fxRate: number,
-  hkdRate: number = 0.915,
-  investCashOpening: number = 0
+  hkdRate: number = 0.915
 ): NetWorthPoint[] {
   return months.map((m) => {
     const { end } = monthRange(m)
     const cash = cashBalance(txns, cashOpening, end)
-    const investCash = investCashBalance(txns, investTxns, fxRate, hkdRate, end, investCashOpening)
     const debt = creditLiability(txns, end) + liabilitiesTotal(liabilities, txns, end)
     let invest = 0
     for (const s of securities) {
@@ -601,8 +566,8 @@ export function netWorthTrend(
     }
     return {
       ym: m,
-      net: cash + investCash - debt + invest,
-      cash: cash + investCash,
+      net: cash - debt + invest,
+      cash,
       invest,
       debt,
     }

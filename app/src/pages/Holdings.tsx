@@ -101,9 +101,26 @@ export default function Holdings() {
     return times.length ? times[times.length - 1] : undefined
   }, [securities])
 
+  // 刷新行情时顺带强制检测分红：已入账的按「证券+除权日+类型」自动去重，不会重复提醒
+  const scanDividends = async () => {
+    try {
+      const heldSecs = securities.filter((s) => sharesHeldAt(s.id, investTxns, Date.now()) > 0)
+      if (!heldSecs.length) return
+      const plans = await fetchPlansFor(heldSecs, 2, true)
+      const pend = buildPending(heldSecs, investTxns, plans, fxRate, hkdRate, ignored)
+      const cnt: Record<string, number> = {}
+      for (const p of pend) cnt[p.security.id] = (cnt[p.security.id] ?? 0) + 1
+      setPendingBySec(cnt)
+      setDividendScanAt(nowLocalISO())
+    } catch {
+      /* 检测失败不影响刷新行情 */
+    }
+  }
+
   const onRefresh = async () => {
     setRefreshing(true)
     await refreshQuotes(true)
+    await scanDividends()
     setRefreshing(false)
   }
 
@@ -145,6 +162,17 @@ export default function Holdings() {
           </div>
         </div>
       </section>
+
+      {/* 待入账分红总提示（刷新行情后检测得到，行内角标之外再给一条） */}
+      {pendingTotal > 0 && (
+        <button
+          className="w-full text-left text-sm px-3 py-2.5 rounded-xl"
+          style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
+          onClick={() => navigate('/invest/dividends')}
+        >
+          💰 发现 {pendingTotal} 笔分红待入账 · 去确认 →
+        </button>
+      )}
 
       {/* 累计已实现盈亏（已卖出部分相对买入成本） */}
       <section className="card flex items-center justify-between">
@@ -209,17 +237,6 @@ export default function Holdings() {
           ))}
         </div>
       )}
-
-      <button
-        className="btn-ghost w-full h-11"
-        onClick={() => navigate('/invest/dividends')}
-      >
-        💰 分红助手{pendingTotal > 0 ? ` · ${pendingTotal} 笔待入账` : ''}
-      </button>
-
-      <button className="btn-primary w-full h-12" onClick={() => navigate('/invest/add')}>
-        ＋ 记一笔投资
-      </button>
 
       {/* 证券管理（删除等） */}
       <Modal

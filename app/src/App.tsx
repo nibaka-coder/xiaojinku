@@ -11,6 +11,15 @@ import AddTransaction from './pages/AddTransaction'
 import Transactions from './pages/Transactions'
 import Statistics from './pages/Statistics'
 import Settings from './pages/Settings'
+import Balance from './pages/settings/Balance'
+import Liabilities from './pages/settings/Liabilities'
+import CategoriesPage from './pages/settings/CategoriesPage'
+import DataPage from './pages/settings/DataPage'
+import Appearance from './pages/settings/Appearance'
+import Lock from './pages/settings/Lock'
+import Fx from './pages/settings/Fx'
+import InvestSettings from './pages/settings/Invest'
+import SyncSettings from './pages/settings/Sync'
 import Holdings from './pages/Holdings'
 import Trades from './pages/Trades'
 import AddInvestTxn from './pages/AddInvestTxn'
@@ -76,6 +85,15 @@ export default function App() {
           <Route path="/invest/add" element={<AddInvestTxn />} />
           <Route path="/invest/dividends" element={<DividendAssistant />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/balance" element={<Balance />} />
+          <Route path="/settings/liabilities" element={<Liabilities />} />
+          <Route path="/settings/categories" element={<CategoriesPage />} />
+          <Route path="/settings/data" element={<DataPage />} />
+          <Route path="/settings/appearance" element={<Appearance />} />
+          <Route path="/settings/lock" element={<Lock />} />
+          <Route path="/settings/fx" element={<Fx />} />
+          <Route path="/settings/invest" element={<InvestSettings />} />
+          <Route path="/settings/sync" element={<SyncSettings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -1,5 +1,5 @@
 // 移动端（375px）布局专项回归：
-// 1) 净资产卡手机上为 2 列（标签左·金额右），桌面 ≥640px 恢复五列（现金/券商现金/投资市值/信用负债/长期负债）
+// 1) 净资产卡手机上为 2 列（标签左·金额右），桌面 ≥640px 恢复四列（现金/投资市值/信用负债/长期负债）
 // 2) 紧凑金额生效（≥1万显示 x.xx万）
 // 3) 持仓汇总卡手机行式 / 桌面三列
 // 4) 记账页不再 autoFocus（无 activeElement 为金额输入框）
@@ -43,7 +43,7 @@ await new Promise(r => setTimeout(r, 1500))
 const nwLayout = await m.evaluate(() => {
   const sec = [...document.querySelectorAll('section')].find(s => s.innerText.includes('净资产（'))
   if (!sec) return null
-  const grid = [...sec.querySelectorAll('div')].find(d => getComputedStyle(d).display === 'grid' && d.children.length === 5)
+  const grid = [...sec.querySelectorAll('div')].find(d => getComputedStyle(d).display === 'grid' && d.children.length === 4)
   if (!grid) return null
   const st = getComputedStyle(grid)
   const cols = st.gridTemplateColumns.split(' ').length
@@ -51,7 +51,7 @@ const nwLayout = await m.evaluate(() => {
   const isRow = getComputedStyle(item).display === 'flex' && getComputedStyle(item).justifyContent === 'space-between'
   return { cols, isRow }
 })
-check('手机·净资产五子项为 2 列网格', nwLayout && nwLayout.cols === 2)
+check('手机·净资产四子项为 2 列网格', nwLayout && nwLayout.cols === 2)
 check('手机·子项为「标签左·金额右」行式', nwLayout && nwLayout.isRow)
 
 // 紧凑金额：由于新环境无持仓数据，手动注入持仓不可行 → 改查渲染函数行为用固定文案验证
@@ -94,11 +94,11 @@ await new Promise(r => setTimeout(r, 1500))
 const nwDesktop = await d.evaluate(() => {
   const sec = [...document.querySelectorAll('section')].find(s => s.innerText.includes('净资产（'))
   if (!sec) return null
-  const grid = [...sec.querySelectorAll('div')].find(d2 => getComputedStyle(d2).display === 'grid' && d2.children.length === 5)
+  const grid = [...sec.querySelectorAll('div')].find(d2 => getComputedStyle(d2).display === 'grid' && d2.children.length === 4)
   if (!grid) return null
   return { cols: getComputedStyle(grid).gridTemplateColumns.split(' ').length, itemDisplay: getComputedStyle(grid.children[0]).display }
 })
-check('桌面·净资产恢复五列', nwDesktop && nwDesktop.cols === 5)
+check('桌面·净资产恢复四列', nwDesktop && nwDesktop.cols === 4)
 check('桌面·子项为块式堆叠（原样式）', nwDesktop && nwDesktop.itemDisplay === 'block')
 
 check('全程无 JS 报错', errs.length === 0)

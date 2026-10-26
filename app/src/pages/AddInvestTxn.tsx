@@ -8,10 +8,10 @@ import { secidFor } from '@/lib/quoteService'
 import type { Currency, InvestTxnType, Market } from '@/types'
 import Modal from '@/components/Modal'
 
+// 分红不提供手动入口：统一由「分红助手」检测后入账，避免同一笔分红被记两次
 const TYPES: { key: InvestTxnType; label: string }[] = [
   { key: 'buy', label: '买入' },
   { key: 'sell', label: '卖出' },
-  { key: 'dividend', label: '分红' },
   { key: 'split', label: '送股/拆股' },
 ]
 const MARKETS: { key: Market; label: string; cur: Currency }[] = [
@@ -62,7 +62,7 @@ export default function AddInvestTxn() {
 
   const p = parseFloat(price) || 0
   const sh = parseFloat(shares) || 0
-  const needShares = type !== 'dividend'
+  const needShares = true
   // 送股填正数（10 送 10、持 1000 股就填 1000）；合股 / 缩股填负数
   const sharesOk = type === 'split' ? sh !== 0 : sh > 0
   // 送股不涉及价格与费用（只动股数，总成本不变）
@@ -257,23 +257,19 @@ export default function AddInvestTxn() {
       <div className="card-2 space-y-2">
         <div>
           <label className="label">
-            {type === 'dividend'
-              ? '股数（可选，留空则单价按总额）'
-              : type === 'split'
-                ? '股数变动量（送股为正，合股为负）'
-                : '股数'}
+            {type === 'split' ? '股数变动量（送股为正，合股为负）' : '股数'}
           </label>
           <input
             className="input"
             type="number"
             inputMode="decimal"
-            placeholder={type === 'dividend' ? '0' : '请输入股数'}
+            placeholder="请输入股数"
             value={shares}
             onChange={(e) => setShares(e.target.value)}
           />
         </div>
         <div>
-          <label className="label">{type === 'dividend' ? '每股分红（或总额）' : '单价（原币）'}</label>
+          <label className="label">单价（原币）</label>
           <input
             className="input"
             type="number"

@@ -144,7 +144,7 @@ const clickByText = async (page, text) => {
 
 // 在设置页配置同步
 async function configureSync(page) {
-  await page.goto(base + FILE + '#/settings', { waitUntil: 'networkidle2' })
+  await page.goto(base + FILE + '#/settings/sync', { waitUntil: 'networkidle2' })
   await waitText(page, '云同步')
   // 整页跳转会清空页面全局变量，故在导航后再注入
   await page.evaluate((u, t) => { window.__api = u; window.__tok = t }, apiUrl, TOKEN)
@@ -177,7 +177,9 @@ await A.page.evaluate(() => {
   if (btn && btn.innerText.trim() === '已关闭') btn.click()
 })
 await new Promise((r) => setTimeout(r, 200))
-// 先清空示例数据，做一个干净的账本
+// 先清空示例数据，做一个干净的账本（清空按钮在「数据备份与导入」子页）
+await A.page.goto(base + FILE + '#/settings/data', { waitUntil: 'networkidle2' })
+await waitText(A.page, '导出 JSON')
 await A.page.evaluate(() => {
   const btns = [...document.querySelectorAll('button')]
   const b = btns.find((x) => x.innerText.includes('清空全部数据'))
@@ -186,6 +188,8 @@ await A.page.evaluate(() => {
 await new Promise((r) => setTimeout(r, 300))
 await clickByText(A.page, '确认清空')
 await new Promise((r) => setTimeout(r, 500))
+await A.page.goto(base + FILE + '#/', { waitUntil: 'networkidle2' })
+await waitText(A.page, '净资产')
 let txt = await bodyText(A.page)
 check('A：清空后账本为空（总资产 0）', txt.includes('¥0.00'))
 
@@ -205,7 +209,7 @@ await A.page.evaluate(() => {
 await new Promise((r) => setTimeout(r, 800))
 
 // 上传
-await A.page.goto(base + FILE + '#/settings', { waitUntil: 'networkidle2' })
+await A.page.goto(base + FILE + '#/settings/sync', { waitUntil: 'networkidle2' })
 await waitText(A.page, '云同步')
 await clickByText(A.page, '立即上传')
 await new Promise((r) => setTimeout(r, 1500))
@@ -248,7 +252,7 @@ await B.page.evaluate(() => {
   if (b) b.click()
 })
 await new Promise((r) => setTimeout(r, 500))
-await B.page.goto(base + FILE + '#/settings', { waitUntil: 'networkidle2' })
+await B.page.goto(base + FILE + '#/settings/sync', { waitUntil: 'networkidle2' })
 await waitText(B.page, '云同步')
 await clickByText(B.page, '立即上传')
 await new Promise((r) => setTimeout(r, 1500))
@@ -269,7 +273,7 @@ await A.page.evaluate(() => {
   if (b) b.click()
 })
 await new Promise((r) => setTimeout(r, 500))
-await A.page.goto(base + FILE + '#/settings', { waitUntil: 'networkidle2' })
+await A.page.goto(base + FILE + '#/settings/sync', { waitUntil: 'networkidle2' })
 await waitText(A.page, '云同步')
 await clickByText(A.page, '立即上传')
 await new Promise((r) => setTimeout(r, 1800))

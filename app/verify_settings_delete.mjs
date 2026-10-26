@@ -45,7 +45,8 @@ let pass = 0, fail = 0
 const assert = (name, cond) => { if (cond) { pass++; console.log('PASS', name) } else { fail++; console.log('FAIL', name) } }
 
 // ---- 1) 长期负债删除（应用内确认）----
-await goto('#/settings')
+// 设置页已改版为「分组菜单 + 子页」，负债在自己的子页
+await goto('#/settings/liabilities')
 assert('负债删除前存在车贷', (await txt()).includes('车贷'))
 await clickText('车贷')
 assert('负债编辑弹窗含删除按钮', await waitHas('删除', 2000))
@@ -78,8 +79,8 @@ const chipsAfter = await chipCount()
 assert('预算删除后 chip 减少', chipsAfter < chipsBefore)
 }
 
-// ---- 3) 分类删除（应用内确认，分类管理内嵌于设置页）----
-await goto('#/settings')
+// ---- 3) 分类删除（应用内确认，分类管理在设置子页）----
+await goto('#/settings/categories')
 const catBefore = (await txt()).includes('餐饮')
 // 点击分类卡片（button.card-2 内包含 餐饮），排除预算条里的 餐饮 标签
 const catClicked = await page.evaluate(() => {

@@ -104,43 +104,40 @@ console.log('\n=== A3) 送股后卖光：已实现盈亏不能虚增（送来的
   ok('已实现盈亏 = 200000', near(lots.totalRealizedCNY, 200000), `实际 ${lots.totalRealizedCNY}`)
 }
 
-console.log('\n=== A4) 分红现金计入净资产 + 与「回收」去重（核心推演）===')
+console.log('\n=== A4) 券商里的钱不计入净资产（v2.25 口径）+ 回收即回补 ===')
 {
+  // 口径：净资产 = 银行卡现金 + 投资市值 − 负债。
+  // 券商账户里的可取现金（转出未买、分红到账未转出）不单独计一项 ——
+  // 一旦买入（回到市值）或回收到银行卡即自动回补，不会永久漏算。
   const sec = { ...SEC }
-  const base = { cashOpening: 10000, liabilities: [], securities: [sec], investTxns: [] }
 
   const nw0 = C.netWorth([], [], 10000, [sec], [], FX, HKD)
   ok('① 初始净资产 10000', near(nw0, 10000), `实际 ${nw0}`)
 
-  // 转出 10000（银行卡 → 券商）
+  // 转出 10000（银行卡 → 券商）：钱离开银行卡但未买入 → 暂不计入
   const t1 = [mkTxn({ type: 'expense', amount: 10000, fund_source: 'cash', is_investment_transfer: true })]
   const nw1 = C.netWorth(t1, [], 10000, [sec], [], FX, HKD)
-  ok('② 转出后仍 10000', near(nw1, 10000), `实际 ${nw1}`)
-  ok('② 券商现金 = 10000', near(C.investCashBalance(t1, [], FX, HKD), 10000))
+  ok('② 转出未买入 → 暂不计入（=0）', near(nw1, 0), `实际 ${nw1}`)
 
-  // 买入 100 股 @80
+  // 买入 100 股 @80：钱变成股票 → 回到净资产
   const i1 = [mkInv({ type: 'buy', shares: 100, price: 80, fee: 0 })]
-  const nw2 = C.netWorth(t1, [], 10000, [sec], i1, FX, HKD)
-  ok('③ 买入后仍 10000', near(nw2, 10000), `实际 ${nw2}`)
-  ok('③ 券商现金 = 2000', near(C.investCashBalance(t1, i1, FX, HKD), 2000))
+  const sec80 = { ...sec, lastPrice: 80 }
+  const nw2 = C.netWorth(t1, [], 10000, [sec80], i1, FX, HKD)
+  ok('③ 买入后 = 市值 8000', near(nw2, 8000), `实际 ${nw2}`)
 
-  // 分红：每股 5 元，100 股，代扣税 10%（税 50，到手 450）
+  // 分红：每股 5 元，100 股，代扣税 10%（税 50，到手 450）；除权后股价 75
   const i2 = [...i1, mkInv({ type: 'dividend', shares: 100, price: 5, fee: 50 })]
-  const secEx = { ...sec, lastPrice: 75 } // 除权后股价 80 − 5
+  const secEx = { ...sec, lastPrice: 75 }
   const nw3 = C.netWorth(t1, [], 10000, [secEx], i2, FX, HKD)
-  // 预期：0(银行卡) + 2450(券商) + 7500(市值) = 9950，比初始少 50 = 分红税（真实损失）
-  ok('④ 分红后 = 9950（少 50 是税）', near(nw3, 9950), `实际 ${nw3}`)
-  ok('④ 券商现金 = 2450（含分红）', near(C.investCashBalance(t1, i2, FX, HKD), 2450))
+  ok('④ 分红到账未转出 → 只有市值 7500', near(nw3, 7500), `实际 ${nw3}`)
 
-  // 回收 2450（券商 → 银行卡）：只搬运不应改变净资产
-  const t2 = [
-    ...t1,
-    mkTxn({ type: 'income', amount: 2450, is_investment_transfer: true }),
-  ]
+  // 回收 2450（券商 → 银行卡）：券商现金回到银行卡 → 净资产回补到真实值 9950
+  const t2 = [...t1, mkTxn({ type: 'income', amount: 2450, is_investment_transfer: true })]
   const nw4 = C.netWorth(t2, [], 10000, [secEx], i2, FX, HKD)
-  ok('⑤ 回收后净资产不变（不重复计）', near(nw4, nw3), `${nw3} → ${nw4}`)
+  // 真实净资产 = 0(银行卡转出后) + 2450(回收) + 7500(市值) = 9950，比初始少 50 = 分红税（真实损失）
+  ok('⑤ 回收后回补到 9950（少 50 是税）', near(nw4, 9950), `实际 ${nw4}`)
   ok('⑤ 银行卡 +2450', near(C.cashBalance(t2, 10000), 2450), `实际 ${C.cashBalance(t2, 10000)}`)
-  ok('⑤ 券商现金归 0', near(C.investCashBalance(t2, i2, FX, HKD), 0), `实际 ${C.investCashBalance(t2, i2, FX, HKD)}`)
+  ok('⑤ 回补额 = 券商现金 2450', near(nw4 - nw3, 2450), `回补 ${nw4 - nw3}`)
 }
 
 console.log('\n=== A5) 双成本口径：成本不同，净资产必须相同 ===')
@@ -159,7 +156,8 @@ console.log('\n=== A5) 双成本口径：成本不同，净资产必须相同 ==
   ok('两者市值相同', near(a.marketValueCNY, b.marketValueCNY))
   const t = [mkTxn({ type: 'expense', amount: 10000, fund_source: 'cash', is_investment_transfer: true })]
   const nwA = C.netWorth(t, [], 10000, [sec], txns, FX, HKD)
-  ok('净资产与口径无关 = 9950', near(nwA, 9950), `实际 ${nwA}`)
+  // 新口径：银行卡 0 + 市值 7500（券商现金不计）
+  ok('净资产与口径无关 = 7500', near(nwA, 7500), `实际 ${nwA}`)
 }
 
 console.log('\n=== A6) 摊薄成本为负时盈亏率不出现天文数字 ===')
@@ -214,34 +212,23 @@ console.log('\n=== A8) A股差别化红利税分档 ===')
   ok('ETF → 免税', near(defaultTaxRate({ ...SEC, market: 'etf' }, base, base), 0))
 }
 
-console.log('\n=== A9) 券商期初现金（investCashOpening）===')
+console.log('\n=== A9) 转账记录不完整也不再影响净资产（取消券商现金项后的收益）===')
 {
-  // 场景：记账开始前券商里已有 5.7 万本金，转账只记了转入 6.3 万，却买了 12 万
-  // → 不加期初时券商现金 = 63000 - 120000 = -57000（看着吓人，其实是漏算的资产）
-  const t = [
-    mkTxn({ type: 'expense', amount: 63000, is_investment_transfer: true }),
-  ]
+  // 场景：记账前券商里已有 5.7 万本金，转账只记了 6.3 万，却买了 12 万。
+  // 旧口径会推导出 −5.7 万的「券商现金」并拉低净资产；新口径不看券商现金，
+  // 只要股票还在（市值 12 万），净资产就是对的。
+  const t = [mkTxn({ type: 'expense', amount: 63000, is_investment_transfer: true })]
   const inv = [mkInv({ type: 'buy', shares: 1000, price: 120, fee: 0 })]
-  const noOpening = C.investCashBalance(t, inv, FX, HKD)
-  ok('未填期初 → 券商现金为负', near(noOpening, -57000), `实际 ${noOpening}`)
-
-  const withOpening = C.investCashBalance(t, inv, FX, HKD, Infinity, 57000)
-  ok('填 5.7 万期初 → 券商现金归零', near(withOpening, 0), `实际 ${withOpening}`)
-
-  // 净资产：期初只进一次，且银行卡期初不含这笔钱 → 净资产应恰好 +5.7 万
   const sec = { ...SEC, id: 's1', currency: 'CNY', lastPrice: 120 }
-  const nw0 = C.netWorth(t, [], 200000, [sec], inv, FX, HKD, 0)
-  const nw1 = C.netWorth(t, [], 200000, [sec], inv, FX, HKD, 57000)
-  ok('净资产随期初现金等额增加', near(nw1 - nw0, 57000), `差值 ${nw1 - nw0}`)
 
-  // 走势：每一期都应含期初（这笔钱从一开始就在券商里）
+  const nw = C.netWorth(t, [], 200000, [sec], inv, FX, HKD)
+  // 银行卡 200000 − 63000 = 137000 + 市值 120000 = 257000
+  ok('转账记少了也不影响净资产', near(nw, 257000), `实际 ${nw}`)
+
   const months = ['2026-01', '2026-02']
-  const tr = C.netWorthTrend(months, t, [], 200000, [sec], inv, FX, HKD, 57000)
-  ok('走势每期都含券商期初', tr.every((p) => p.net === nw1), JSON.stringify(tr.map((p) => p.net)))
-
-  // 期初现金与转账/买卖互不干扰：再补一笔转入，只加不覆盖
-  const t2 = [...t, mkTxn({ type: 'expense', amount: 10000, is_investment_transfer: true })]
-  ok('期初 + 新转账叠加正确', near(C.investCashBalance(t2, inv, FX, HKD, Infinity, 57000), 10000))
+  const tr = C.netWorthTrend(months, t, [], 200000, [sec], inv, FX, HKD)
+  ok('走势同样不受影响', tr.every((p) => p.net === nw), JSON.stringify(tr.map((p) => p.net)))
+  ok('走势 cash 项即银行卡现金', near(tr[0].cash, 137000), `实际 ${tr[0].cash}`)
 }
 
 // ===== Part B：真渲染 =====
@@ -306,7 +293,11 @@ ok('侧边栏可展开投资管理', expandedOk)
 ok('侧边栏有「分红助手」', navText.includes('分红助手'), navText.replace(/\n/g, ' | ').slice(0, 120))
 
 const ovText = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
-ok('概览页有「券商现金」格子', ovText.includes('券商现金'))
+ok('概览页已无「券商现金」格子', !ovText.includes('券商现金'))
+ok(
+  '概览四子项齐全（现金/投资市值/信用负债/长期负债）',
+  ['现金', '投资市值', '信用负债', '长期负债'].every((k) => ovText.includes(k))
+)
 
 await page.goto(base + '?t=' + Date.now() + '#/invest/dividends', { waitUntil: 'networkidle2' })
 await new Promise((r) => setTimeout(r, 2500))
@@ -315,19 +306,37 @@ const divText = await page.evaluate(() => document.querySelector('main')?.innerT
 ok('分红助手页渲染非空', divLen > 0, `root 长度 ${divLen}`)
 ok('分红助手标题存在', divText.includes('分红助手'), divText.slice(0, 80).replace(/\n/g, ' | '))
 
+// 设置页已改为「分组菜单 + 子页」：首页只列入入口，具体设置进子页
 await page.goto(base + '?t=' + Date.now() + '#/settings', { waitUntil: 'networkidle2' })
 await new Promise((r) => setTimeout(r, 1200))
 const setText = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
-ok('设置页有「券商期初现金」', setText.includes('券商期初现金'))
-ok('设置页资产负债含券商现金与市值', setText.includes('券商现金') && setText.includes('投资市值'))
-ok('设置页有「持仓成本口径」', setText.includes('持仓成本口径'))
-ok('设置页有「真实成本」选项', setText.includes('真实成本'))
-ok('设置页有「摊薄成本」选项', setText.includes('摊薄成本'))
+ok('设置首页是分组菜单', setText.includes('数据与资产') && setText.includes('偏好') && setText.includes('同步'))
+ok('设置首页无「券商期初现金」', !setText.includes('券商期初现金'))
+ok(
+  '设置首页含九个入口',
+  ['资产负债', '长期负债', '分类管理', '数据备份与导入', '外观', '应用锁', '汇率', '投资设置', '云同步'].every(
+    (k) => setText.includes(k)
+  ),
+  setText.replace(/\n/g, ' | ').slice(0, 160)
+)
+
+await page.goto(base + '?t=' + Date.now() + '#/settings/invest', { waitUntil: 'networkidle2' })
+await new Promise((r) => setTimeout(r, 1000))
+const investText = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
+ok('投资设置子页有「持仓成本口径」', investText.includes('持仓成本口径'))
+ok('投资设置子页有「真实成本」选项', investText.includes('真实成本'))
+ok('投资设置子页有「摊薄成本」选项', investText.includes('摊薄成本'))
+
+await page.goto(base + '?t=' + Date.now() + '#/invest/trades', { waitUntil: 'networkidle2' })
+await new Promise((r) => setTimeout(r, 1500))
+const tradeText = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
+ok('记录页已无分红筛选', !tradeText.includes('分红'))
+ok('记录页按月份分组', /\d{4}年\d{1,2}月/.test(tradeText), tradeText.slice(0, 80).replace(/\n/g, ' | '))
 
 await page.goto(base + '?t=' + Date.now() + '#/invest/holdings', { waitUntil: 'networkidle2' })
 await new Promise((r) => setTimeout(r, 1500))
 const holdText = await page.evaluate(() => document.querySelector('main')?.innerText ?? '')
-ok('持仓页有分红助手入口', holdText.includes('分红助手'))
+ok('持仓页已移除「记一笔投资」按钮', !holdText.includes('记一笔投资'))
 
 ok('全程无 pageerror', errors.length === 0, errors.join(' | '))
 
