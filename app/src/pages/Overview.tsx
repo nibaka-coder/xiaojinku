@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import * as echarts from 'echarts'
+import type { EChartsOption } from 'echarts'
 import { useStore } from '@/store/useStore'
 import {
   cashBalance,
@@ -106,7 +106,7 @@ export default function Overview() {
     return nwTrend[nwTrend.length - 1].net - nwTrend[0].net
   }, [nwTrend])
 
-  const nwOption = useMemo<echarts.EChartsOption>(() => {
+  const nwOption = useMemo<EChartsOption>(() => {
     const up = nwYearDelta >= 0
     const line = up ? '#5fa896' : '#e5736b'
     return {

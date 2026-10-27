@@ -24,6 +24,7 @@ import Holdings from './pages/Holdings'
 import Trades from './pages/Trades'
 import AddInvestTxn from './pages/AddInvestTxn'
 import DividendAssistant from './pages/DividendAssistant'
+import { useSWUpdate } from './hooks/useSWUpdate'
 
 // 根据设置应用浅/暗主题
 function useTheme() {
@@ -52,6 +53,7 @@ export default function App() {
   const resolveWithRemote = useSyncStore((s) => s.resolveWithRemote)
   const resolveWithLocal = useSyncStore((s) => s.resolveWithLocal)
   const dismissConflict = useSyncStore((s) => s.dismissConflict)
+  const { hasUpdate, applyUpdate, dismiss } = useSWUpdate()
   useTheme()
 
   useEffect(() => {
@@ -73,6 +75,22 @@ export default function App() {
 
   return (
     <>
+      {hasUpdate && (
+        <div
+          className="fixed top-2 left-2 right-2 z-50 flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm shadow-lg"
+          style={{ background: 'var(--accent-strong)', color: '#fff' }}
+        >
+          <span>发现新版本，刷新后生效</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button className="underline" onClick={applyUpdate}>
+              刷新
+            </button>
+            <button onClick={dismiss} className="opacity-70 text-xs">
+              忽略
+            </button>
+          </div>
+        </div>
+      )}
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Overview />} />

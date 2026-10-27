@@ -38,7 +38,17 @@ npm run dev     # 开发
 npm run build   # 构建，产出 dist/（index.html + PWA 三件套 + 图标）
 ```
 
-技术栈：Vite + React 18 + TypeScript + Tailwind CSS + Zustand（persist 到 IndexedDB）+ ECharts。
+技术栈：Vite + React 18 + TypeScript + Tailwind CSS + Zustand（persist 到 IndexedDB）+ ECharts（按需引入）。
+
+### 加载与更新机制（v2.26 起）
+
+- **秒开**：Service Worker 对页面导航采用 stale-while-revalidate —— 打开时直接用本地缓存渲染，
+  后台下载新版。断网也能打开（账本数据在 IndexedDB，与 SW 无关）。
+- **更新提示**：后台发现新版时，页面顶部出现「发现新版本 · 刷新」，点击即用上新版；
+  点「忽略」则下次打开自动生效。判断依据是构建时写入 `<meta name="xjk-build">` 的版本号。
+- **部署前提**：`sw.js` **必须 no-cache 部署**，否则新版前端推不下去。
+  服务器配置见 `app/deploy/部署说明.md` 第五节（含 Cloudflare 清缓存步骤）。
+- **体积**：单文件 `index.html` 约 825 KB，brotli 后约 227 KB（ECharts 改按需引入后减半）。
 
 ## 数据同步（可选）
 

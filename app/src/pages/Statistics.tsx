@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type * as echarts from 'echarts'
+import type { EChartsOption } from 'echarts'
 import { useStore } from '@/store/useStore'
 import { trend, categoryBreakdownRange, periodSummary, topExpenses, isAmortized } from '@/lib/calc'
 import { lastNMonths, ym, monthRange, monthsBetween, fmtDate } from '@/lib/date'
@@ -62,7 +62,7 @@ export default function Statistics() {
 
   const periodLabel = range === 'month' ? '本月' : range === 'custom' ? '区间' : `近${months.length}月`
 
-  const trendOption = useMemo<echarts.EChartsOption>(
+  const trendOption = useMemo<EChartsOption>(
     () => ({
       color: [INCOME, EXPENSE, ACCENT],
       tooltip: { trigger: 'axis' },
@@ -88,7 +88,7 @@ export default function Statistics() {
     [trendData, crossYear]
   )
 
-  const pieOption = useMemo<echarts.EChartsOption>(() => {
+  const pieOption = useMemo<EChartsOption>(() => {
     const data = slices.map((s) => ({
       name: s.category.name,
       value: Math.round(s.amount),
