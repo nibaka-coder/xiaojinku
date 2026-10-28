@@ -96,6 +96,24 @@ export interface Settings {
   isSeed?: boolean
 }
 
+// 账本级设置：可导出到备份文件、可同步到服务器。
+// 不含任何凭据（sync.token）与本设备行为（pinHash / 应用锁 / 主题）。
+export type LedgerSettings = Omit<
+  Settings,
+  'appLockEnabled' | 'pinHash' | 'theme' | 'sync' | 'lastBackupAt' | 'dividendScanAt'
+>
+
+// 设备本地配置：永不出域 —— 不进备份文件、不进同步载荷。
+// 导入/拉取远端数据时始终以本机值为准，避免被他设备的凭据或锁屏 PIN 覆盖。
+export interface DeviceSettings {
+  appLockEnabled: boolean
+  pinHash?: string
+  theme: ThemeMode
+  sync: SyncConfig
+  lastBackupAt?: string
+  dividendScanAt?: string
+}
+
 // 证券市场：A股 / 美股 / 港股 / ETF（ETF 行情同 A股 secid 规则）
 export type Market = 'ashare' | 'us' | 'hk' | 'etf'
 
@@ -155,5 +173,9 @@ export interface ExportData {
   transactions: Transaction[]
   securities: Security[]
   investTxns: InvestTxn[]
-  settings: Settings
+  // 只含账本级设置；凭据与设备行为在导出时剥离（见 lib/ledger.ts）
+  settings: LedgerSettings
 }
+
+// 备份/同步载荷格式版本。3 = 已剥离设备本地配置（2 及更早含 token / pinHash）
+export const EXPORT_FORMAT_VERSION = 3

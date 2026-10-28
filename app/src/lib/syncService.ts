@@ -1,4 +1,5 @@
 import type { ExportData } from '@/types'
+import { toTransferPayload } from '@/lib/ledger'
 
 // 云同步客户端（自建服务器）
 // 契约与 deploy/api.php 一致：整份数据 JSON + 版本号，冲突时服务端返回 409。
@@ -84,12 +85,15 @@ export async function push(
   const url = endpoint(cfg.url)
   if (!url) return { kind: 'error', message: '未配置同步地址' }
   try {
+    // 发送前最后一道闸：清洗并断言载荷不含设备本地配置（token / pinHash / 锁 / 主题）。
+    // 命中异常直接抛错中止上传 —— 宁可同步失败，也不能把凭据送出去。
+    const payload = toTransferPayload(data)
     const res = await request(
       url,
       cfg.token,
       {
         method: 'POST',
-        body: JSON.stringify({ baseVersion: cfg.version, data, force }),
+        body: JSON.stringify({ baseVersion: cfg.version, data: payload, force }),
       },
       10000
     )

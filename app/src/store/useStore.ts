@@ -5,6 +5,7 @@ import { uid } from '@/lib/id'
 import { nowLocalISO } from '@/lib/date'
 import { hashPin } from '@/lib/pin'
 import { getInitialState, type InitialState } from '@/lib/seed'
+import { ledgerSettingsOf, deviceSettingsOf } from '@/lib/ledger'
 import { fetchPrice, fetchFxRates, type FxRates } from '@/lib/quoteService'
 import type {
   Liability,
@@ -20,6 +21,8 @@ import type {
   SyncConfig,
   CostBasis,
 } from '@/types'
+// 注意：这是值不是类型，不能放进上面的 import type（否则运行时被擦除）
+import { EXPORT_FORMAT_VERSION } from '@/types'
 
 type NewLiability = Omit<Liability, 'id' | 'created_at' | 'updated_at'>
 type UpdateLiability = Partial<NewLiability> & { id: string }
@@ -322,14 +325,15 @@ export const useStore = create<AppState>()(
         const s = get()
         return {
           app: 'xiaojinku',
-          version: 2,
+          version: EXPORT_FORMAT_VERSION,
           exported_at: touch(),
           liabilities: s.liabilities,
           categories: s.categories,
           transactions: s.transactions,
           securities: s.securities,
           investTxns: s.investTxns,
-          settings: s.settings,
+          // 只带账本级设置：sync.token / pinHash / 应用锁 / 主题不进备份文件
+          settings: ledgerSettingsOf(s.settings),
         }
       },
 
@@ -340,11 +344,12 @@ export const useStore = create<AppState>()(
           transactions: d.transactions ?? [],
           securities: d.securities ?? [],
           investTxns: d.investTxns ?? [],
-          // 导入他人/他设备的数据时，保留本机的服务器地址与令牌、备份时间（这些属于本机配置）
+          // 导入他人/他设备的数据时，账本字段采用导入值，设备本地配置一律保留本机：
+          // sync（服务器地址与令牌）、lastBackupAt、pinHash、应用锁开关、主题、分红扫描时间。
+          // 否则导入一份他设备的备份会把本机的同步凭证改掉、甚至用陌生 PIN 把用户锁在门外。
           settings: {
             ...(d.settings ?? getInitialState().settings),
-            sync: s.settings.sync,
-            lastBackupAt: s.settings.lastBackupAt,
+            ...deviceSettingsOf(s.settings),
           },
         })),
 
@@ -392,10 +397,12 @@ export const useStore = create<AppState>()(
           transactions: d.transactions ?? [],
           securities: d.securities ?? [],
           investTxns: d.investTxns ?? [],
+          // 同 importData：账本字段取自远端，设备本地配置一律以本机为准，
+          // 只更新同步版本号与时间。
           settings: {
             ...(d.settings ?? s.settings),
+            ...deviceSettingsOf(s.settings),
             sync: { ...s.settings.sync, version, lastSyncAt: touch() },
-            lastBackupAt: s.settings.lastBackupAt,
           },
         })),
     }),
