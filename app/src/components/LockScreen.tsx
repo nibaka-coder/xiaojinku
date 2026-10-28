@@ -16,7 +16,7 @@ export default function LockScreen({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <div className="min-h-full flex items-center justify-center p-6 bg-brand-700">
-      <div className="w-full max-w-xs bg-white rounded-2xl p-6 shadow-xl">
+      <div className="w-full max-w-xs bg-card rounded-2xl p-6 shadow-soft">
         <div className="text-center mb-4">
           <div className="text-3xl">🔒</div>
           <h2 className="font-semibold mt-2">小金库已锁定</h2>

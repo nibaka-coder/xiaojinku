@@ -29,7 +29,7 @@ export default function Money({
   return (
     <span className={className} title={`≈ ¥${cny.toFixed(2)}`}>
       {fmtMoney(amount, currency, { sign })}
-      <span className="text-slate-400 text-xs ml-1">
+      <span className="text-sub text-xs ml-1">
         ≈¥{cny.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}
       </span>
     </span>

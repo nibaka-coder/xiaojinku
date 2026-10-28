@@ -7,6 +7,7 @@ import { fmtDate, nowLocalISO } from '@/lib/date'
 import { buildPending, fetchPlansFor } from '@/lib/dividendScan'
 import type { InvestTxn, InvestTxnType } from '@/types'
 import Modal from '@/components/Modal'
+import EmptyState from '@/components/EmptyState'
 
 // 分红由「分红助手」检测入账，记录页只负责展示与删除（新增入口不在这里，避免重复记账）
 const TXN_LABEL: Record<InvestTxnType, string> = {
@@ -18,7 +19,7 @@ const TXN_LABEL: Record<InvestTxnType, string> = {
 const TXN_TONE: Record<InvestTxnType, { bg: string; fg: string }> = {
   buy: { bg: 'var(--accent-soft)', fg: 'var(--accent-strong)' },
   sell: { bg: 'var(--card-2)', fg: 'var(--sub)' },
-  dividend: { bg: 'var(--card-2)', fg: 'var(--income)' },
+  dividend: { bg: 'var(--card-2)', fg: 'var(--income-text)' },
   split: { bg: 'var(--card-2)', fg: 'var(--sub)' },
 }
 
@@ -33,7 +34,7 @@ const FILTERS: { key: InvestTxnType | 'all'; label: string }[] = [
 
 // 红涨绿跌（仅投资模块）
 function colorOf(v: number): string {
-  return v >= 0 ? 'var(--expense)' : 'var(--income)'
+  return v >= 0 ? 'var(--expense-text)' : 'var(--income-text)'
 }
 function sign(v: number): string {
   return v >= 0 ? '+' : ''
@@ -165,7 +166,13 @@ export default function Trades() {
       </select>
 
       {list.length === 0 ? (
-        <div className="card text-center py-12 text-sub">暂无交易记录</div>
+        <div className="card">
+          <EmptyState
+            icon="📈"
+            title="暂无交易记录"
+            desc="买入、卖出与分红都会出现在这里"
+          />
+        </div>
       ) : (
         <div className="space-y-4">
           {groups.map((g) => (
@@ -228,7 +235,7 @@ export default function Trades() {
                       </span>
                       <span
                         className="font-semibold tabular-nums shrink-0"
-                        style={t.type === 'dividend' ? { color: 'var(--income)' } : undefined}
+                        style={t.type === 'dividend' ? { color: 'var(--income-text)' } : undefined}
                       >
                         {t.type === 'split' ? '—' : fmtMoney(investTxnAmount(t), t.currency)}
                       </span>

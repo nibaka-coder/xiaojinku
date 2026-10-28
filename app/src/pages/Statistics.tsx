@@ -150,15 +150,15 @@ export default function Statistics() {
       <section className="card grid grid-cols-3 gap-2 text-center">
         <div>
           <div className="text-xs text-faint">{periodLabel}收入</div>
-          <div className="font-semibold" style={{ color: 'var(--income)' }}>{fmtMoney(period.income, 'CNY')}</div>
+          <div className="font-semibold" style={{ color: 'var(--income-text)' }}>{fmtMoney(period.income, 'CNY')}</div>
         </div>
         <div>
           <div className="text-xs text-faint">{periodLabel}支出</div>
-          <div className="font-semibold" style={{ color: 'var(--expense)' }}>{fmtMoney(period.expense, 'CNY')}</div>
+          <div className="font-semibold" style={{ color: 'var(--expense-text)' }}>{fmtMoney(period.expense, 'CNY')}</div>
         </div>
         <div>
           <div className="text-xs text-faint">净额</div>
-          <div className="font-semibold" style={{ color: period.net >= 0 ? 'var(--accent)' : 'var(--danger)' }}>
+          <div className="font-semibold" style={{ color: period.net >= 0 ? 'var(--accent)' : 'var(--danger-text)' }}>
             {fmtMoney(period.net, 'CNY', { sign: true })}
           </div>
         </div>
@@ -194,7 +194,7 @@ export default function Statistics() {
                 <div key={t.id} className="flex items-center gap-3 py-1.5">
                   <span
                     className="w-5 text-center text-xs font-semibold shrink-0"
-                    style={{ color: i < 3 ? 'var(--expense)' : 'var(--faint)' }}
+                    style={{ color: i < 3 ? 'var(--expense-text)' : 'var(--text-faint)' }}
                   >
                     {i + 1}
                   </span>
@@ -208,7 +208,7 @@ export default function Statistics() {
                       {isAm && ` · 摊销${t.amortize_months}期`}
                     </div>
                   </div>
-                  <span className="text-sm font-semibold shrink-0" style={{ color: 'var(--expense)' }}>
+                  <span className="text-sm font-semibold shrink-0" style={{ color: 'var(--expense-text)' }}>
                     {fmtMoney(t.amount, 'CNY')}
                   </span>
                 </div>

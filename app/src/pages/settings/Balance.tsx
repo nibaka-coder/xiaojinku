@@ -34,8 +34,8 @@ export default function Balance() {
       <section className="card space-y-3">
         <Row label="现金余额" value={fmtMoney(cash, 'CNY')} />
         <Row label="投资市值" value={fmtMoney(investMarket, 'CNY')} />
-        <Row label="信用贷款负债" value={fmtMoney(credit, 'CNY')} valueColor="var(--credit)" />
-        <Row label="长期负债（车贷等）" value={fmtMoney(liabTotal, 'CNY')} valueColor="var(--danger)" />
+        <Row label="信用贷款负债" value={fmtMoney(credit, 'CNY')} valueColor="var(--credit-text)" />
+        <Row label="长期负债（车贷等）" value={fmtMoney(liabTotal, 'CNY')} valueColor="var(--danger-text)" />
         <div className="border-t border-soft pt-3 flex justify-between items-center">
           <span className="text-main font-medium">净资产</span>
           <span className="font-semibold text-main">{fmtMoney(nw, 'CNY')}</span>

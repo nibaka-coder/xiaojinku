@@ -26,7 +26,7 @@ export default function Lock() {
       <section className="card space-y-3">
         {appLockEnabled ? (
           <>
-            <p className="text-sm" style={{ color: 'var(--income)' }}>
+            <p className="text-sm" style={{ color: 'var(--income-text)' }}>
               已启用 PIN 保护
             </p>
             <button className="btn-outline w-full" onClick={() => setConfirmLock(true)}>
@@ -55,7 +55,7 @@ export default function Lock() {
               onChange={(e) => setPin2(e.target.value)}
             />
             {err && (
-              <p className="text-xs" style={{ color: 'var(--danger)' }}>
+              <p className="text-xs" style={{ color: 'var(--danger-text)' }}>
                 {err}
               </p>
             )}

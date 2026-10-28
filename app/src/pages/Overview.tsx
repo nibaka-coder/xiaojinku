@@ -29,10 +29,10 @@ function pctChange(cur: number, prev: number): number | null {
 // 箭头 + 颜色：expense 下降为优(green)，income 上升为优(green)
 function deltaBadge(cur: number, prev: number, kind: 'expense' | 'income') {
   const pct = pctChange(cur, prev)
-  if (pct === null) return { text: '—', color: 'var(--faint)' }
+  if (pct === null) return { text: '—', color: 'var(--text-faint)' }
   const arrow = pct > 0 ? '↑' : pct < 0 ? '↓' : '—'
   const good = kind === 'expense' ? pct < 0 : pct > 0
-  const color = pct === 0 ? 'var(--faint)' : good ? 'var(--income)' : 'var(--expense)'
+  const color = pct === 0 ? 'var(--text-faint)' : good ? 'var(--income-text)' : 'var(--expense-text)'
   return { text: `${arrow}${Math.round(Math.abs(pct))}%`, color }
 }
 
@@ -205,7 +205,7 @@ export default function Overview() {
           <span className="font-semibold text-main">净资产走势 · 近一年</span>
           <span
             className="text-sm font-semibold"
-            style={{ color: nwYearDelta >= 0 ? 'var(--accent)' : 'var(--danger)' }}
+            style={{ color: nwYearDelta >= 0 ? 'var(--accent)' : 'var(--danger-text)' }}
           >
             {nwYearDelta >= 0 ? '+' : '−'}
             {fmtMoney(Math.abs(nwYearDelta), 'CNY')}
@@ -228,19 +228,19 @@ export default function Overview() {
         <div className="grid grid-cols-3 gap-2 text-center mb-3">
           <div>
             <div className="text-xs text-faint">本月收入</div>
-            <div className="font-semibold tabular-nums" style={{ color: 'var(--income)' }}>
+            <div className="font-semibold tabular-nums" style={{ color: 'var(--income-text)' }}>
               {fmtMoney(ms.income, 'CNY', { compact: true })}
             </div>
           </div>
           <div>
             <div className="text-xs text-faint">本月支出{hasAmort ? '（摊销口径）' : ''}</div>
-            <div className="font-semibold tabular-nums" style={{ color: 'var(--expense)' }}>
+            <div className="font-semibold tabular-nums" style={{ color: 'var(--expense-text)' }}>
               {fmtMoney(ms.expense, 'CNY', { compact: true })}
             </div>
           </div>
           <div>
             <div className="text-xs text-faint">净额</div>
-            <div className="font-semibold tabular-nums" style={{ color: ms.net >= 0 ? 'var(--accent)' : 'var(--danger)' }}>
+            <div className="font-semibold tabular-nums" style={{ color: ms.net >= 0 ? 'var(--accent)' : 'var(--danger-text)' }}>
               {fmtMoney(ms.net, 'CNY', { sign: true, compact: true })}
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function Overview() {
           <span className="text-sub">
             支出 {fmtMoney(ytd.expense, 'CNY')}
             <span className="text-faint mx-1.5">·</span>
-            结余 <span className="font-semibold" style={{ color: ytd.net >= 0 ? 'var(--accent)' : 'var(--danger)' }}>{fmtMoney(ytd.net, 'CNY', { sign: true })}</span>
+            结余 <span className="font-semibold" style={{ color: ytd.net >= 0 ? 'var(--accent)' : 'var(--danger-text)' }}>{fmtMoney(ytd.net, 'CNY', { sign: true })}</span>
           </span>
         </div>
       </section>
@@ -306,7 +306,7 @@ function InvestOverviewCard({
     () => investYtdInvested(investTxns, fxRate, hkdRate),
     [investTxns, fxRate, hkdRate]
   )
-  const colorOf = (v: number) => (v >= 0 ? 'var(--expense)' : 'var(--income)')
+  const colorOf = (v: number) => (v >= 0 ? 'var(--expense-text)' : 'var(--income-text)')
   const sign = (v: number) => (v >= 0 ? '+' : '')
 
   return (

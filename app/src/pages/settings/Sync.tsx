@@ -36,7 +36,7 @@ export default function Sync() {
             className="text-xs px-2 py-1 rounded-full"
             style={{
               background: sync.enabled ? 'var(--accent-soft)' : 'var(--card-2)',
-              color: sync.enabled ? 'var(--accent-strong)' : 'var(--faint)',
+              color: sync.enabled ? 'var(--accent-strong)' : 'var(--text-faint)',
             }}
           >
             {sync.enabled ? '已启用' : '已关闭'}
@@ -86,13 +86,13 @@ export default function Sync() {
         {testMsg && (
           <p
             className="text-xs"
-            style={{ color: testMsg.startsWith('连接成功') ? 'var(--income)' : 'var(--danger)' }}
+            style={{ color: testMsg.startsWith('连接成功') ? 'var(--income-text)' : 'var(--danger-text)' }}
           >
             {testMsg}
           </p>
         )}
         {syncError && (
-          <p className="text-xs" style={{ color: 'var(--danger)' }}>
+          <p className="text-xs" style={{ color: 'var(--danger-text)' }}>
             同步失败：{syncError}
           </p>
         )}

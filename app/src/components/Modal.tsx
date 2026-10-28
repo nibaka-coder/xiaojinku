@@ -20,7 +20,7 @@ export default function Modal({
       onClick={onClose}
     >
       <div
-        className="bg-card w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-auto"
+        className="bg-card w-full sm:max-w-md rounded-t-sheet sm:rounded-sheet shadow-soft max-h-[90vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {title && (

@@ -66,7 +66,7 @@ export default function SyncConflictDialog({
             <div className="text-xs text-faint">你刚才在这台设备上的改动</div>
           </div>
         </div>
-        <div className="text-xs" style={{ color: 'var(--danger)' }}>
+        <div className="text-xs" style={{ color: 'var(--danger-text)' }}>
           ⚠️ 选择后未被选中的一方数据将被覆盖，此操作不可撤销。建议先各导出一份备份。
         </div>
       </div>

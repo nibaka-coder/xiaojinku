@@ -7,12 +7,16 @@ import { nowLocalISO } from '@/lib/date'
 import { buildPending, fetchPlansFor, needScan } from '@/lib/dividendScan'
 import type { Market, Security } from '@/types'
 import Modal from '@/components/Modal'
+import EmptyState from '@/components/EmptyState'
+import Skeleton from '@/components/Skeleton'
+import Toast from '@/components/Toast'
+import type { ToastTone } from '@/components/Toast'
 
 const MARKET_LABEL: Record<Market, string> = { ashare: 'A股', us: '美股', hk: '港股', etf: 'ETF' }
 
 // 红涨绿跌（仅投资模块）
 function colorOf(v: number): string {
-  return v >= 0 ? 'var(--expense)' : 'var(--income)'
+  return v >= 0 ? 'var(--expense-text)' : 'var(--income-text)'
 }
 function sign(v: number): string {
   return v >= 0 ? '+' : ''
@@ -117,11 +121,19 @@ export default function Holdings() {
     }
   }
 
+  const [toast, setToast] = useState<{ msg: string; tone: ToastTone } | null>(null)
+
   const onRefresh = async () => {
     setRefreshing(true)
-    await refreshQuotes(true)
-    await scanDividends()
-    setRefreshing(false)
+    try {
+      await refreshQuotes(true)
+      await scanDividends()
+      setToast({ msg: '行情已更新', tone: 'success' })
+    } catch {
+      setToast({ msg: '行情刷新失败，请检查网络后重试', tone: 'error' })
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   return (
@@ -185,12 +197,18 @@ export default function Holdings() {
 
       {/* 列表 */}
       {holdings.length === 0 ? (
-        <div className="card text-center py-12">
-          <div className="text-4xl mb-2">📈</div>
-          <p className="text-sub">暂无持仓</p>
-          <button className="btn-primary mt-4" onClick={() => navigate('/invest/add')}>
-            去添加证券
-          </button>
+        <div className="card">
+          <EmptyState
+            icon="📈"
+            title="还没有持仓"
+            desc="记下第一笔买入后，这里会自动算出持仓市值与盈亏"
+            actionText="去记一笔买入"
+            onAction={() => navigate('/invest/add')}
+          />
+        </div>
+      ) : refreshing ? (
+        <div className="card">
+          <Skeleton rows={Math.min(holdings.length, 4)} />
         </div>
       ) : (
         <div className="space-y-2">
@@ -299,7 +317,7 @@ export default function Holdings() {
             {confirmingDelete && (
               <div
                 className="mt-2 rounded-lg p-3 text-sm"
-                style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)' }}
+                style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger-text)' }}
               >
                 ⚠️ 确认删除「{manageSec.name}」吗？该证券及其全部交易将永久删除，不可撤销。
               </div>
@@ -307,6 +325,10 @@ export default function Holdings() {
           </div>
         )}
       </Modal>
+
+      {toast && (
+        <Toast open={!!toast} message={toast.msg} tone={toast.tone} onClose={() => setToast(null)} />
+      )}
     </div>
   )
 }

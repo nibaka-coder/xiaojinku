@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import Modal from '@/components/Modal'
+import EmptyState from '@/components/EmptyState'
 import { fmtTime } from '@/lib/date'
 import { fmtMoney } from '@/lib/money'
 import { isAmortized } from '@/lib/calc'
@@ -169,13 +170,13 @@ export default function Transactions() {
               const cat = t.category_id ? catMap.get(t.category_id) : undefined
               const sign = t.type === 'income' ? '+' : '−'
               const isXfer = !!t.is_investment_transfer
-              const color = t.type === 'income' ? 'var(--income)' : t.is_repayment ? 'var(--credit)' : 'var(--text)'
+              const color = t.type === 'income' ? 'var(--income-text)' : t.is_repayment ? 'var(--credit-text)' : 'var(--text)'
               const sourceTag = t.is_repayment
-                ? { text: '信用还款', c: 'var(--credit)' }
+                ? { text: '信用还款', c: 'var(--credit-text)' }
                 : isXfer
                 ? { text: '投资转账', c: 'var(--accent-strong)' }
                 : t.fund_source === 'credit'
-                ? { text: '信用', c: 'var(--credit)' }
+                ? { text: '信用', c: 'var(--credit-text)' }
                 : { text: '现金', c: 'var(--text-sub)' }
               return (
                 <div
@@ -220,7 +221,7 @@ export default function Transactions() {
                             (t.is_repayment ? '信用还款' : t.payee || '交易'),
                         })
                       }}
-                      className="p-2 -mr-2 rounded-lg text-faint hover:text-[var(--danger)] hover:bg-[var(--card-2)] active:bg-[var(--border)]"
+                      className="p-2 -mr-2 rounded-lg text-faint hover:text-[var(--danger-text)] hover:bg-[var(--card-2)] active:bg-[var(--border)]"
                       aria-label="删除该笔"
                     >
                       🗑
@@ -233,7 +234,15 @@ export default function Transactions() {
         </div>
       ))}
 
-      {list.length === 0 && <div className="text-center text-faint py-10">没有匹配的交易</div>}
+      {list.length === 0 && (
+        <div className="card">
+          <EmptyState
+            icon="🧾"
+            title="没有匹配的交易"
+            desc="换个筛选条件或时间范围再看看"
+          />
+        </div>
+      )}
 
       {pendingDel && (
         <Modal

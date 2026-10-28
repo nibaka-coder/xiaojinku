@@ -80,7 +80,7 @@ export default function Liabilities() {
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <div className="font-semibold" style={{ color: 'var(--danger)' }}>
+                <div className="font-semibold" style={{ color: 'var(--danger-text)' }}>
                   待还 {fmtMoney(liabilityCurrentBalance(l, transactions), 'CNY')}
                 </div>
               </div>

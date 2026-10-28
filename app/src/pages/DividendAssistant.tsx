@@ -147,7 +147,7 @@ export default function DividendAssistant() {
       </div>
 
       {doneMsg && (
-        <div className="card-2 text-sm" style={{ color: 'var(--income)', background: 'var(--accent-soft)' }}>
+        <div className="card-2 text-sm" style={{ color: 'var(--income-text)', background: 'var(--accent-soft)' }}>
           ✓ {doneMsg}
         </div>
       )}
@@ -228,7 +228,7 @@ export default function DividendAssistant() {
                           税前 {fmtMoney(est.gross, p.security.currency)} − 税{' '}
                           {fmtMoney(est.tax, p.security.currency)}
                         </span>
-                        <span className="font-medium tabular-nums" style={{ color: 'var(--income)' }}>
+                        <span className="font-medium tabular-nums" style={{ color: 'var(--income-text)' }}>
                           到手 {fmtMoney(est.net, p.security.currency)}
                           {fx !== 1 && ` · ≈${fmtMoney(est.net * fx, 'CNY')}`}
                         </span>

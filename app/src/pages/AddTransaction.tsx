@@ -151,7 +151,7 @@ export default function AddTransaction() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-main">{editId ? '编辑交易' : '记账'}</h1>
         {editId && (
-          <button onClick={onDelete} className="text-sm" style={{ color: 'var(--danger)' }}>
+          <button onClick={onDelete} className="text-sm" style={{ color: 'var(--danger-text)' }}>
             删除
           </button>
         )}
@@ -280,7 +280,7 @@ export default function AddTransaction() {
               className="text-xs px-2 py-1 rounded-full"
               style={{
                 background: amortizeOn ? 'var(--accent-soft)' : 'var(--card-2)',
-                color: amortizeOn ? 'var(--accent-strong)' : 'var(--faint)',
+                color: amortizeOn ? 'var(--accent-strong)' : 'var(--text-faint)',
               }}
             >
               {amortizeOn ? '已开启' : '关闭'}
@@ -341,7 +341,7 @@ export default function AddTransaction() {
               ))}
             </select>
           </div>
-          <div className="card-2 text-sm" style={{ color: 'var(--credit)', background: 'var(--credit-soft)' }}>
+          <div className="card-2 text-sm" style={{ color: 'var(--credit-text)', background: 'var(--credit-soft)' }}>
             ✅ 这是一笔还款：将从现金扣减，并冲减「{targetObj?.name ?? '信用贷款'}」当前待还 {fmtMoney(targetBalance, 'CNY')}。
           </div>
         </div>

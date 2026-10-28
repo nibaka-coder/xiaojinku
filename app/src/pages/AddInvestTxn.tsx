@@ -324,7 +324,7 @@ export default function AddInvestTxn() {
             ))
           )}
           {allocatedShares > 0 && (
-            <div className="text-sm" style={{ color: previewPL >= 0 ? 'var(--expense)' : 'var(--income)' }}>
+            <div className="text-sm" style={{ color: previewPL >= 0 ? 'var(--expense-text)' : 'var(--income-text)' }}>
               预计已实现盈亏 {previewPL >= 0 ? '+' : ''}
               {fmtMoney(previewPL, secCurrency)}（≈{fmtMoney(previewPLCNY, 'CNY')}）
             </div>
@@ -361,7 +361,7 @@ export default function AddInvestTxn() {
       )}
 
       {editId && (
-        <button className="btn-ghost w-full text-sm" style={{ color: 'var(--danger)' }} onClick={() => setDelOpen(true)}>
+        <button className="btn-ghost w-full text-sm" style={{ color: 'var(--danger-text)' }} onClick={() => setDelOpen(true)}>
           删除该笔交易
         </button>
       )}
