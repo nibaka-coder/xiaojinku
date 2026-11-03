@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>小金库 · 移动端整改视觉稿（v2.29 现状 / 改善后）</title>
+<style>
+  :root{
+    --bg:#f6f3ee; --bg-soft:#fbf9f5; --card:#ffffff; --card-2:#fbf8f3;
+    --text:#2e2c33; --sub:#716e79; --faint:#736d7b;
+    --border:rgba(46,44,51,.08); --border-2:rgba(46,44,51,.14);
+    --accent:#5fa896; --accent-strong:#3d7266; --accent-soft:#e7f1ed;
+    --expense:#ce3823; --income:#367c5e;
+    --paper:#ffffff; --ink:#2e2c33; --line:#e7e2d9;
+    --sage600:#4c8f80; --dark-bg:#1b1a1f; --dark-card:#232228; --dark-accent:#9ad3c5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#ece8e0; color:var(--ink); padding:34px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  }
+  .pair{background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:26px 30px 24px; margin-bottom:30px; box-shadow:0 6px 30px rgba(46,44,51,.06); width:940px}
+  .pair.wide{width:1120px}
+  .pair-head{display:flex; align-items:baseline; gap:14px; margin-bottom:20px}
+  .pair-title{font-size:19px; font-weight:700; letter-spacing:.2px}
+  .pair-sub{font-size:12.5px; color:#8b877f}
+  .pair-body{display:flex; align-items:flex-start; gap:18px}
+  .col{width:360px; flex:none}
+  .col-label{font-size:12px; font-weight:600; letter-spacing:.4px; margin-bottom:9px; display:flex; align-items:center; gap:7px}
+  .col-label .dot{width:7px;height:7px;border-radius:50%}
+  .col-label.bad{color:#a9736a}   .col-label.bad .dot{background:#d98d80}
+  .col-label.good{color:#3d7266}  .col-label.good .dot{background:#5fa896}
+  .arrow{flex:none; align-self:center; width:26px; text-align:center; color:#b9b3a8; font-size:22px; font-weight:300}
+
+  /* ===== 手机外框 ===== */
+  .phone{
+    width:360px; height:720px; background:var(--bg); border:1px solid #d8d2c6;
+    border-radius:26px; overflow:hidden; position:relative; display:flex; flex-direction:column;
+    box-shadow:0 10px 26px rgba(46,44,51,.10);
+  }
+  .topbar{
+    height:52px; flex:none; background:rgba(255,255,255,.94); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px; padding:0 16px; font-size:15px; font-weight:600; color:var(--text);
+  }
+  .topbar .grow{flex:1}
+  .topbar .t-icon{font-size:17px; color:var(--sub); font-weight:400}
+  .topbar.clean{justify-content:center}
+  .screen{flex:1; overflow:hidden; padding:14px 16px 0; position:relative}
+  .bottomtab{
+    position:absolute; left:0; right:0; bottom:0; height:62px; background:#ffffff;
+    border-top:1px solid var(--border); display:flex; align-items:stretch;
+  }
+  .bottomtab .tb{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10.5px; color:var(--faint)}
+  .bottomtab .tb.on{color:var(--sage600); font-weight:600}
+  .bottomtab.fixed .tb.on{color:var(--accent-strong); font-weight:600}
+  .bottomtab .tb .e{font-size:19px; line-height:1}
+  .ico{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+  /* ===== 记账页元件（按 v2.29 真实界面）===== */
+  .seg{display:flex; background:var(--card-2); border-radius:12px; padding:3px; gap:2px; margin-bottom:14px}
+  .seg .s{flex:1; text-align:center; border-radius:9px; padding:7px 0; font-size:12.5px; font-weight:500; color:var(--sub)}
+  .seg .s.on{background:var(--card); color:var(--text); box-shadow:0 1px 2px rgba(40,38,52,.08); font-weight:600}
+  .amt-card{background:var(--card); border:1px solid var(--border-2); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:9px; margin-bottom:16px}
+  .amt-card .yen{font-size:22px; font-weight:600; color:var(--text)}
+  .amt-card .num{font-size:29px; font-weight:600; color:#b7b2ac; letter-spacing:.5px}
+  .amt-card.overflowing{width:calc(100% + 30px)}
+  .label{font-size:11.5px; font-weight:600; color:var(--sub); margin-bottom:7px; display:block}
+  .cat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:16px}
+  .cat-item{border:1px solid var(--border); border-radius:12px; padding:8px 2px 7px; text-align:center; font-size:10.5px; color:var(--sub); display:flex; flex-direction:column; align-items:center; gap:4px}
+  .cat-item .ci{width:22px;height:22px; color:var(--accent-strong)}
+  .cat-item .ci .ico{width:21px;height:21px}
+  .cat-item.on{background:var(--accent); border-color:transparent; color:#fff}
+  .cat-item.on .ci{color:#fff}
+  .opt-row{display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--sub); padding:8px 2px; border-top:1px solid var(--border)}
+  .opt-row .pill{font-size:10px; padding:3px 9px; border-radius:999px; background:var(--card-2); color:var(--faint)}
+  .save{background:var(--accent); color:#fff; border-radius:14px; padding:13px 0; text-align:center; font-size:13.5px; font-weight:600; margin-top:14px}
+  .veil{position:absolute; top:54px; height:58px; right:0; width:30px; pointer-events:none;
+    background:repeating-linear-gradient(135deg,rgba(206,56,35,.14) 0 6px,rgba(206,56,35,.04) 6px 12px);
+    border-left:2px dashed #ce3823}
+  .veil-tag{position:absolute; top:58px; right:2px; background:#ce3823; color:#fff; font-size:9px; font-weight:700; padding:3px 5px; border-radius:5px; white-space:nowrap; z-index:2}
+  .edge-ok{position:absolute; top:54px; height:58px; right:16px; border-right:2px dashed var(--accent-strong); opacity:.55; pointer-events:none}
+
+  /* ===== 宽度标尺 ===== */
+  .ruler{margin-top:18px; border-top:1px solid var(--line); padding-top:14px; display:flex; gap:22px}
+  .ruler .r{flex:1; min-width:0}
+  .ruler .rt{font-size:10.5px; font-weight:600; letter-spacing:.4px; margin-bottom:7px}
+  .ruler .rt.bad{color:#a9736a} .ruler .rt.good{color:#3d7266}
+  .bar{display:flex; height:22px; border-radius:7px; overflow:hidden; border:1px solid var(--line); font-size:9.5px; color:#fff; font-weight:600}
+  .bar .vp{background:#8fb8ab; display:flex; align-items:center; padding-left:9px}
+  .bar .ov{background:repeating-linear-gradient(135deg,#d98d80 0 6px,#c9796c 6px 12px); display:flex; align-items:center; justify-content:center}
+  .bar .full{background:#5fa896; display:flex; align-items:center; padding-left:9px; flex:1}
+  .ruler .rd{font-size:10.5px; color:#8b877f; margin-top:6px; line-height:1.5}
+
+  /* ===== 图02：对比度四格 ===== */
+  .cmp{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .cmp-cell{border:1px solid var(--line); border-radius:14px; padding:14px; background:#faf8f4}
+  .cmp-cell.dk{background:#efece6}
+  .cmp-h{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px}
+  .cmp-h .t{font-size:12px; font-weight:700}
+  .cmp-h .s{font-size:10px; color:#8b877f}
+  .tabbar{display:flex; background:#fff; border:1px solid var(--border); border-radius:11px; overflow:hidden; padding:9px 0}
+  .tabbar.dark{background:#232228; border-color:rgba(255,255,255,.1)}
+  .tabbar .t{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:9.5px; color:#736d7b}
+  .tabbar.dark .t{color:#807e88}
+  .tabbar .t .ico{width:16px;height:16px}
+  .tabbar .t.on{font-weight:700}
+  .tabbar .t.on.old{color:var(--sage600)}
+  .tabbar .t.on.new{color:var(--accent-strong)}
+  .tabbar.dark .t.on.old{color:var(--sage600)}
+  .tabbar.dark .t.on.new{color:var(--dark-accent)}
+  .ratio{display:flex; align-items:baseline; gap:10px; margin-top:11px}
+  .ratio .n{font-size:22px; font-weight:700; letter-spacing:.3px}
+  .ratio .n.bad{color:#c05b4d} .ratio .n.good{color:#3d7266}
+  .ratio .u{font-size:10.5px; color:#8b877f}
+  .ratio .badge{margin-left:auto; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:999px}
+  .badge.no{background:#fbe9e5; color:#b05545} .badge.yes{background:#e7f1ed; color:#3d7266}
+  .hex{font-size:10px; color:#8b877f; margin-top:7px; letter-spacing:.2px}
+  .cmp-note{margin-top:14px; font-size:11px; color:#57534c; line-height:1.65; background:#faf8f4; border:1px dashed var(--line); border-radius:10px; padding:11px 13px}
+
+  /* ===== 图03：层级条与热区 ===== */
+  .struct{display:flex; gap:24px}
+  .struct .side{flex:1; min-width:0}
+  .struct h3{font-size:12.5px; font-weight:700; margin-bottom:4px}
+  .struct .desc{font-size:11px; color:#8b877f; margin-bottom:12px; line-height:1.55}
+  .stack{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:10px}
+  .lay{display:flex; align-items:center; gap:9px; padding:9px 12px; font-size:11px; border-bottom:1px solid var(--line)}
+  .lay:last-child{border-bottom:0}
+  .lay .k{width:52px; flex:none; font-size:9.5px; color:#8b877f; letter-spacing:.3px}
+  .lay .v{flex:1; background:var(--card-2); border-radius:7px; padding:7px 10px; color:var(--sub)}
+  .lay .v.hl{background:var(--accent-soft); color:var(--accent-strong); font-weight:600}
+  .lay .v.warn{background:#fdf1ee; color:#b05545}
+  .flagrow{font-size:10.5px; color:#8b877f; line-height:1.7; padding:2px 0}
+  .flagrow b{color:#b05545}
+  .hits{display:flex; gap:18px; align-items:center; margin-top:6px; padding:12px 0; border-top:1px dashed var(--line)}
+  .hit{display:flex; align-items:center; gap:10px}
+  .hit .box{border:1.5px dashed #c9c4bb; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#a09a92}
+  .hit .box.s30{width:30px;height:30px; color:#7d776f}
+  .hit .box.s44{width:44px;height:44px; border-color:var(--accent); background:var(--accent-soft); color:var(--accent-strong)}
+  .hit .box .ico{width:15px;height:15px}
+  .hit .box.s44 .ico{width:19px;height:19px}
+  .hit .lb{font-size:10.5px; color:#57534c; line-height:1.5}
+  .hit .lb b{display:block; font-size:11px}
+
+  /* ===== 注释 ===== */
+  .notes{display:flex; gap:10px; margin-top:20px; border-top:1px solid var(--line); padding-top:16px}
+  .note{flex:1; background:#faf8f4; border:1px solid var(--line); border-radius:12px; padding:11px 12px; font-size:11.5px; color:#57534c; line-height:1.6}
+  .note b{display:block; font-size:10px; letter-spacing:.6px; color:var(--accent-strong); margin-bottom:5px}
+  .note.flag{background:#fdf7f4; border-color:#efdcd4}
+  .note.flag b{color:#b0715f}
+  .footnote{font-size:11.5px; color:#8b877f; line-height:1.7; margin-top:14px; padding:12px 14px; background:#faf8f4; border-radius:10px; border:1px dashed var(--line)}
+</style>
+</head>
+<body>
+
+<!-- ===== 线性图标库（沿用上一批视觉稿）===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.34a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64h.08A1.7 1.7 0 0 0 10 3.1V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9v.08a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13c0-6 6-9 16-9 0 10-3 16-9 16z"/><path d="M4 20c3-5 7-8 12-10"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="m7 14 4-4 3 2 4-5"/></symbol>
+  <symbol id="i-bowl" viewBox="0 0 24 24"><path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M8 7c0-1 1-2 1-2M12 7c0-1.4 1-2.5 1-2.5M16 7c0-1 1-2 1-2"/><path d="M3 21h18"/></symbol>
+  <symbol id="i-bus" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="15" rx="2"/><path d="M5 11h14M8 18v2M16 18v2"/><circle cx="9" cy="15" r="1"/><circle cx="15" cy="15" r="1"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M5 8h12v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2M4 21h15"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 14h2"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
+</svg>
+
+
+<!-- ============ 01 记账页 ============ -->
+<section class="pair" id="shot1">
+  <div class="pair-head">
+    <div class="pair-title">01 / 记账页 · 横向溢出与顶栏收敛</div>
+    <div class="pair-sub">v2.29 真实界面为基线，同一份内容；右侧只改「溢出修复 + 顶栏 + 选中色」</div>
+  </div>
+  <div class="pair-body">
+    <div class="col">
+      <div class="col-label bad"><span class="dot"></span>现状 · 页面被金额框撑宽，顶栏与底栏入口重复</div>
+      <div class="phone">
+        <div class="topbar"><svg class="ico t-icon"><use href="#i-menu"/></svg><span>记账</span><span class="grow"></span><svg class="ico t-icon"><use href="#i-gear"/></svg></div>
+        <div class="screen">
+          <div class="veil"></div><div class="veil-tag">+51px</div>
+          <div class="seg"><span class="s on">记账</span><span class="s">流水</span><span class="s">统计</span></div>
+          <div class="amt-card overflowing"><span class="yen">¥</span><span class="num">0.00</span></div>
+          <label class="label">分类</label>
+          <div class="cat-grid">
+            <div class="cat-item on"><span class="ci"><svg class="ico"><use href="#i-bowl"/></svg></span>餐饮</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-bus"/></svg></span>交通</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-bag"/></svg></span>购物</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-folder"/></svg></span>居住</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-coffee"/></svg></span>娱乐</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-wallet"/></svg></span>医疗</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-archive"/></svg></span>其他</div>
+          </div>
+          <label class="label">资金来源</label>
+          <div class="seg"><span class="s on">现金</span><span class="s">信用贷款</span></div>
+          <div class="opt-row"><span>按区间摊销（车险 / 会员等）</span><span class="pill">关闭</span></div>
+          <div class="opt-row"><span>更多（日期 / 商户 / 备注）</span><span class="pill">展开 ▼</span></div>
+          <div class="save">保存并继续记账</div>
+        </div>
+        <div class="bottomtab">
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-leaf"/></svg>概览</div>
+          <div class="tb on"><svg class="ico" style="width:19px;height:19px"><use href="#i-receipt"/></svg>日常开销</div>
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-chart"/></svg>投资管理</div>
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-gear"/></svg>设置</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="col">
+      <div class="col-label good"><span class="dot"></span>改善后 · 页面不再横向滚动，顶栏只留页名</div>
+      <div class="phone">
+        <div class="topbar clean"><span>记账</span></div>
+        <div class="screen">
+          <div class="edge-ok"></div>
+          <div class="seg"><span class="s on">记账</span><span class="s">流水</span><span class="s">统计</span></div>
+          <div class="amt-card"><span class="yen">¥</span><span class="num">0.00</span></div>
+          <label class="label">分类</label>
+          <div class="cat-grid">
+            <div class="cat-item on"><span class="ci"><svg class="ico"><use href="#i-bowl"/></svg></span>餐饮</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-bus"/></svg></span>交通</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-bag"/></svg></span>购物</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-folder"/></svg></span>居住</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-coffee"/></svg></span>娱乐</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-wallet"/></svg></span>医疗</div>
+            <div class="cat-item"><span class="ci"><svg class="ico"><use href="#i-archive"/></svg></span>其他</div>
+          </div>
+          <label class="label">资金来源</label>
+          <div class="seg"><span class="s on">现金</span><span class="s">信用贷款</span></div>
+          <div class="opt-row"><span>按区间摊销（车险 / 会员等）</span><span class="pill">关闭</span></div>
+          <div class="opt-row"><span>更多（日期 / 商户 / 备注）</span><span class="pill">展开 ▼</span></div>
+          <div class="save">保存并继续记账</div>
+        </div>
+        <div class="bottomtab fixed">
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-leaf"/></svg>概览</div>
+          <div class="tb on"><svg class="ico" style="width:19px;height:19px"><use href="#i-receipt"/></svg>日常开销</div>
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-chart"/></svg>投资管理</div>
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-gear"/></svg>设置</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler">
+    <div class="r">
+      <div class="rt bad">现状 · 实测 390 视口</div>
+      <div class="bar"><div class="vp" style="flex:390">视口 390px</div><div class="ov" style="flex:51">+51</div></div>
+      <div class="rd">实际页面 441px。360 窄屏溢出更多（+81px）。右侧看着像留白，其实是页面被撑宽，手指左右滑能晃动、点金额框时可能横向跳一下。</div>
+    </div>
+    <div class="r">
+      <div class="rt good">改善后 · 实测 390 视口</div>
+      <div class="bar"><div class="full">页面 390px ＝ 视口 390px · 横向滚动 0</div></div>
+      <div class="rd">输入框加一个 min-w-0 即可收进容器。金额、分类、按钮、导航机制全部照旧，改的只是这一个输入框的宽度约束。</div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><b>① 溢出修复 · 零风险</b>AddTransaction.tsx 金额 input 的 flex-1 缺 min-w-0，固有最小宽撑破页面。加一个类名即可，不碰数据、不碰布局，长金额输入照常可见。</div>
+    <div class="note"><b>② 顶栏收敛 · 可剔除</b>去掉汉堡与齿轮：抽屉 4 项与底栏 4 项完全重复，「设置」入口从 3 处减到 1 处。若你习惯用汉堡，划掉这条即可。</div>
+    <div class="note"><b>③ 选中色 · 见图 02</b>底栏「日常开销」由固定 sage-600 改为 accent-strong，浅/暗两套主题都达标。右屏已按新色绘制。</div>
+    <div class="note flag"><b>需要你拍板</b>顶栏页名「记账」与分段里高亮的「记账」仍是同一个词出现两次。彻底去重要去掉顶栏页名，牵动 Layout，风险最大；图 03 单独说明。</div>
+  </div>
+</section>
+
+
+<!-- ============ 02 底栏选中态对比度 ============ -->
+<section class="pair" id="shot2">
+  <div class="pair-head">
+    <div class="pair-title">02 / 底栏选中态 · 浅色与暗色实测对比度</div>
+    <div class="pair-sub">同一处代码：text-sage-600（固定色）→ text-accent-strong（随主题切换的 CSS 变量）</div>
+  </div>
+  <div class="cmp">
+    <div class="cmp-cell">
+      <div class="cmp-h"><span class="t">浅色 · 现状</span><span class="s">底栏白底</span></div>
+      <div class="tabbar">
+        <div class="t"><svg class="ico"><use href="#i-leaf"/></svg>概览</div>
+        <div class="t on old"><svg class="ico"><use href="#i-receipt"/></svg>日常开销</div>
+        <div class="t"><svg class="ico"><use href="#i-chart"/></svg>投资管理</div>
+        <div class="t"><svg class="ico"><use href="#i-gear"/></svg>设置</div>
+      </div>
+      <div class="ratio"><span class="n bad">3.79</span><span class="u">: 1</span><span class="badge no">未达 4.5:1</span></div>
+      <div class="hex">#4c8f80（sage-600，固定值，不随主题）</div>
+    </div>
+
+    <div class="cmp-cell">
+      <div class="cmp-h"><span class="t">浅色 · 改善后</span><span class="s">底栏白底</span></div>
+      <div class="tabbar">
+        <div class="t"><svg class="ico"><use href="#i-leaf"/></svg>概览</div>
+        <div class="t on new"><svg class="ico"><use href="#i-receipt"/></svg>日常开销</div>
+        <div class="t"><svg class="ico"><use href="#i-chart"/></svg>投资管理</div>
+        <div class="t"><svg class="ico"><use href="#i-gear"/></svg>设置</div>
+      </div>
+      <div class="ratio"><span class="n good">5.53</span><span class="u">: 1</span><span class="badge yes">达标</span></div>
+      <div class="hex">#3d7266（--accent-strong 浅色档，已有的 token）</div>
+    </div>
+
+    <div class="cmp-cell dk">
+      <div class="cmp-h"><span class="t">暗色 · 现状</span><span class="s">底栏 #232228</span></div>
+      <div class="tabbar dark">
+        <div class="t"><svg class="ico"><use href="#i-leaf"/></svg>概览</div>
+        <div class="t on old"><svg class="ico"><use href="#i-receipt"/></svg>日常开销</div>
+        <div class="t"><svg class="ico"><use href="#i-chart"/></svg>投资管理</div>
+        <div class="t"><svg class="ico"><use href="#i-gear"/></svg>设置</div>
+      </div>
+      <div class="ratio"><span class="n bad">4.17</span><span class="u">: 1</span><span class="badge no">未达 4.5:1</span></div>
+      <div class="hex">#4c8f80 仍是浅色档的绿，在暗底上偏暗、选中不明显</div>
+    </div>
+
+    <div class="cmp-cell dk">
+      <div class="cmp-h"><span class="t">暗色 · 改善后</span><span class="s">底栏 #232228</span></div>
+      <div class="tabbar dark">
+        <div class="t"><svg class="ico"><use href="#i-leaf"/></svg>概览</div>
+        <div class="t on new"><svg class="ico"><use href="#i-receipt"/></svg>日常开销</div>
+        <div class="t"><svg class="ico"><use href="#i-chart"/></svg>投资管理</div>
+        <div class="t"><svg class="ico"><use href="#i-gear"/></svg>设置</div>
+      </div>
+      <div class="ratio"><span class="n good">9.39</span><span class="u">: 1</span><span class="badge yes">达标</span></div>
+      <div class="hex">#9ad3c5（--accent-strong 暗色档，随 .dark 自动切换）</div>
+    </div>
+  </div>
+  <div class="cmp-note">
+    修法只改 Layout.tsx 一处类名（DataPage.tsx 的 Toast 同族，可选一起）；不需要新增颜色、不需要改 CSS 变量表。代价仅是选中态颜色略变。
+    <b>与你此前判「暂缓」的暗色图表硬编码不是一回事</b>：那处是折线图轴线／分割线的装饰色，这处是 11px 文字的可读性，且一个值同时管浅色和暗色两套主题。
+  </div>
+  <div class="footnote">数值为相对亮度实算（WCAG 2.1 公式）：现状浅 3.79 / 暗 4.17，改善后浅 5.53 / 暗 9.39。参考：暗色主题下主色 --accent 本身为 7.68:1，正文 15.05:1。</div>
+</section>
+
+
+<!-- ============ 03 结构与热区：需拍板 ============ -->
+<section class="pair wide" id="shot3">
+  <div class="pair-head">
+    <div class="pair-title">03 / 导航结构与点击热区 · 需要你拍板的两项</div>
+    <div class="pair-sub">这两条都不是 bug，是「用起来顺不顺手」的判断；前两条修复不依赖它们</div>
+  </div>
+  <div class="struct">
+    <div class="side">
+      <h3>现状 · 首屏三层导航</h3>
+      <div class="desc">顶栏 56px ＋ 分段 Tab ＋ 底栏 65px，去掉状态栏后约占屏高两成。</div>
+      <div class="stack">
+        <div class="lay"><span class="k">顶栏</span><span class="v warn">☰ 汉堡　·　页名「记账」　·　⚙ 设置</span></div>
+        <div class="lay"><span class="k">分段</span><span class="v">记账（高亮） / 流水 / 统计　←　又说了一次「记账」</span></div>
+        <div class="lay"><span class="k">内容</span><span class="v">金额 · 分类 · 来源 · 保存</span></div>
+        <div class="lay"><span class="k">底栏</span><span class="v">概览 / 日常开销 / 投资管理 / 设置</span></div>
+      </div>
+      <div class="flagrow"><b>设置入口 3 处</b>：顶栏齿轮、底栏 Tab、汉堡抽屉里还有一项。</div>
+      <div class="flagrow"><b>抽屉 4 项 ≡ 底栏 4 项</b>：所有子页面靠「底栏 + 分段」都能到达，抽屉是纯冗余。</div>
+    </div>
+
+    <div class="side">
+      <h3>改善后 · 保守版（推荐先试）</h3>
+      <div class="desc">只去掉顶栏的汉堡和齿轮，页名保留；分段与底栏机制一字不改。</div>
+      <div class="stack">
+        <div class="lay"><span class="k">顶栏</span><span class="v hl">记账（仅页名，无多余入口）</span></div>
+        <div class="lay"><span class="k">分段</span><span class="v">记账（高亮） / 流水 / 统计</span></div>
+        <div class="lay"><span class="k">内容</span><span class="v">金额 · 分类 · 来源 · 保存（不变）</span></div>
+        <div class="lay"><span class="k">底栏</span><span class="v">概览 / 日常开销 / 投资管理 / 设置（不变）</span></div>
+      </div>
+      <div class="flagrow">设置入口 <b>1 处</b>；抽屉与重复齿轮消失。</div>
+      <div class="flagrow">代价：要动 Layout.tsx 的顶栏与抽屉渲染；「少一层」后可能一时找不到设置，需要你实际用几天才算通过。</div>
+      <div class="flagrow">彻底版（可剔除）：连顶栏页名也去掉，位置完全交给分段 Tab —— 改动最大，不建议和前两条一起做。</div>
+    </div>
+  </div>
+
+  <div class="hits">
+    <div class="hit">
+      <div class="box s30"><svg class="ico"><use href="#i-trash"/></svg></div>
+      <div class="lb"><b>现状 · 约 30px</b>流水页每行常驻删除按钮，小于 44px 建议热区，紧邻金额。</div>
+    </div>
+    <div class="hit">
+      <div class="box s44"><svg class="ico"><use href="#i-trash"/></svg></div>
+      <div class="lb"><b>可选 · 44px</b>加大热区，或改为左滑 / 长按出现，减少逐行视觉噪点。</div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    删除按钮这一项<b>不建议动</b>：已经有二次确认弹窗兜底，你也没抱怨过误删，按上一轮定下的标准它不算真实痛点。这里画出来只是让你确认「确实不需要」。
+    三张图全部为独立静态视觉稿，放在 design/ui-preview-mobile/，app/src 一行代码未改。
+  </div>
+</section>
+
+</body>
+</html>

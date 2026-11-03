@@ -193,7 +193,7 @@ export default function AddTransaction() {
           <input
             type="text"
             inputMode="decimal"
-            className="flex-1 bg-transparent text-3xl font-semibold text-main outline-none tabular-nums"
+            className="flex-1 min-w-0 bg-transparent text-3xl font-semibold text-main outline-none tabular-nums"
             placeholder="0.00"
             value={amountStr}
             onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9.]/g, ''))}

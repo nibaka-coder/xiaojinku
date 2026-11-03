@@ -229,7 +229,7 @@ export default function Layout() {
                   key={label}
                   onClick={() => navigate(target)}
                   className={`flex flex-col items-center justify-center gap-0.5 flex-1 ${
-                    active ? 'text-sage-600' : 'text-faint'
+                    active ? 'text-accent-strong' : 'text-faint'
                   }`}
                 >
                   <Glyph value={icon} size={20} />
