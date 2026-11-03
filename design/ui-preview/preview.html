@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>小金库 · UI 收敛视觉稿（现状 / 改善后）</title>
+<style>
+  :root{
+    --bg:#f6f3ee; --bg-soft:#fbf9f5; --card:#ffffff; --card-2:#fbf8f3;
+    --text:#2e2c33; --sub:#716e79; --faint:#736d7b;
+    --border:rgba(46,44,51,.08); --border-2:rgba(46,44,51,.14);
+    --accent:#5fa896; --accent-strong:#3d7266; --accent-soft:#e7f1ed;
+    --expense:#ce3823; --income:#367c5e; --credit:#8f53c3; --warn:#e6b25a;
+    --paper:#ffffff; --ink:#2e2c33; --line:#e7e2d9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#ece8e0; color:var(--ink); padding:34px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  }
+  .pair{background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:26px 30px 24px; margin-bottom:30px; box-shadow:0 6px 30px rgba(46,44,51,.06)}
+  .pair.wide{width:1120px}
+  .pair:not(.wide){width:940px}
+  .pair-head{display:flex; align-items:baseline; gap:14px; margin-bottom:20px}
+  .pair-title{font-size:19px; font-weight:700; letter-spacing:.2px}
+  .pair-sub{font-size:12.5px; color:#8b877f}
+  .pair-body{display:flex; align-items:flex-start; gap:18px}
+  .col{width:360px; flex:none}
+  .col-label{font-size:12px; font-weight:600; letter-spacing:.4px; margin-bottom:9px; display:flex; align-items:center; gap:7px}
+  .col-label .dot{width:7px;height:7px;border-radius:50%}
+  .col-label.bad{color:#a9736a}   .col-label.bad .dot{background:#d98d80}
+  .col-label.good{color:#3d7266}  .col-label.good .dot{background:#5fa896}
+  .arrow{flex:none; align-self:center; width:26px; text-align:center; color:#b9b3a8; font-size:22px; font-weight:300}
+
+  /* ===== 手机外框 ===== */
+  .phone{
+    width:360px; height:720px; background:var(--bg); border:1px solid #d8d2c6;
+    border-radius:26px; overflow:hidden; position:relative; display:flex; flex-direction:column;
+    box-shadow:0 10px 26px rgba(46,44,51,.10);
+  }
+  .topbar{
+    height:52px; flex:none; background:rgba(255,255,255,.86); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px; padding:0 16px; font-size:15px; font-weight:600; color:var(--text);
+  }
+  .topbar .grow{flex:1}
+  .topbar .t-icon{font-size:17px; color:var(--sub); font-weight:400}
+  .screen{flex:1; overflow:hidden; padding:12px 16px 0}
+  .bottomtab{
+    position:absolute; left:0; right:0; bottom:0; height:62px; background:#ffffff;
+    border-top:1px solid var(--border); display:flex; align-items:stretch;
+  }
+  .bottomtab .tb{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10.5px; color:var(--faint)}
+  .bottomtab .tb.on{color:var(--accent-strong); font-weight:600}
+  .bottomtab .tb .e{font-size:19px; line-height:1}
+
+  /* ===== 通用元件 ===== */
+  .seg{display:flex; background:var(--card-2); border-radius:12px; padding:3px; gap:2px; margin-bottom:12px}
+  .seg .s{flex:1; text-align:center; border-radius:9px; padding:7px 0; font-size:13px; font-weight:500; color:var(--sub)}
+  .seg .s.on{background:var(--card); color:var(--text); box-shadow:0 1px 2px rgba(40,38,52,.08)}
+  .h1{font-size:18px; font-weight:700; color:var(--text); margin-bottom:11px}
+  .input{background:var(--card); border:1px solid var(--border-2); border-radius:12px; padding:10px 13px; font-size:13px; color:var(--faint); margin-bottom:11px}
+  .chips{display:flex; gap:7px; overflow:hidden; margin-bottom:9px}
+  .chip{border:1px solid var(--border-2); border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:500; color:var(--sub); background:var(--card); white-space:nowrap}
+  .chip.on{background:var(--accent-soft); border-color:transparent; color:var(--accent-strong)}
+  .count{font-size:11.5px; color:var(--faint); padding:2px 2px 9px}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:0 1px 3px rgba(40,38,52,.05),0 8px 24px rgba(40,38,52,.05)}
+  .daycard{margin-bottom:10px; overflow:hidden}
+  .dayhd{padding:8px 14px; background:var(--card-2); font-size:11.5px; color:var(--sub); border-bottom:1px solid var(--border)}
+  .row{display:flex; align-items:center; gap:11px; padding:11px 14px}
+  .row .ico-wrap{width:34px;height:34px;flex:none;border-radius:50%;background:var(--card-2);display:flex;align-items:center;justify-content:center;font-size:17px}
+  .row .mid{flex:1; min-width:0}
+  .row .nm{font-size:13.5px; font-weight:600; color:var(--text)}
+  .row .meta{font-size:11px; color:var(--faint); margin-top:2px}
+  .row .amt{font-size:13.5px; font-weight:700; color:var(--text); white-space:nowrap}
+  .row .del{font-size:13px; color:#c9c4bb; margin-left:2px}
+  .ico{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+  /* ===== 改善后专用 ===== */
+  .filterbar{display:flex; gap:8px; margin-bottom:10px}
+  .filterbar .f-input{flex:1; display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border-2); border-radius:12px; padding:10px 12px; font-size:13px; color:var(--faint)}
+  .filterbar .f-input svg{color:var(--faint)}
+  .filterbar .f-btn{display:flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent-strong); border-radius:12px; padding:0 12px; font-size:12.5px; font-weight:600}
+  .filterbar .f-btn .badge-n{background:var(--accent-strong); color:#fff; border-radius:999px; width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center}
+  .timeseg{display:flex; background:var(--card-2); border-radius:11px; padding:3px; gap:2px; margin-bottom:12px}
+  .timeseg .t{flex:1; text-align:center; border-radius:8px; padding:7px 0; font-size:12.5px; color:var(--sub)}
+  .timeseg .t.on{background:var(--card); color:var(--text); box-shadow:0 1px 2px rgba(40,38,52,.08); font-weight:600}
+  .statbar{display:flex; align-items:baseline; justify-content:space-between; font-size:11.5px; color:var(--faint); padding:0 2px 10px}
+  .statbar b{color:var(--text); font-size:12.5px; font-weight:600}
+  .listcard{overflow:hidden}
+  .grouphd{display:flex; justify-content:space-between; align-items:center; padding:10px 16px 6px; font-size:11px; color:var(--faint); letter-spacing:.3px}
+  .grouphd .sum{font-size:11px; color:var(--sub)}
+  .listcard .row{padding:9px 16px; border-top:1px solid var(--border)}
+  .listcard .row .ico-wrap{width:30px;height:30px;background:var(--accent-soft);color:var(--accent-strong)}
+  .listcard .row .ico-wrap .ico{width:16px;height:16px}
+  .listcard .row .amt{color:var(--text)}
+  .listcard .row .amt.plus{color:var(--income)}
+  .listcard .row .meta .tag{color:var(--sub)}
+  .listcard .row .del{opacity:.45}
+
+  /* ===== 概览页 ===== */
+  .nw{background:linear-gradient(135deg,#7ec8b4,#3d7266); border-radius:18px; padding:18px; color:#fff; margin-bottom:14px; box-shadow:0 8px 22px rgba(61,114,102,.22)}
+  .nw .lb{font-size:11.5px; opacity:.85}
+  .nw .big{font-size:27px; font-weight:700; margin:4px 0 14px; letter-spacing:.3px}
+  .nw .grid{display:grid; grid-template-columns:1fr 1fr; gap:7px 14px; font-size:11.5px}
+  .nw .grid .g{display:flex; justify-content:space-between; opacity:.92}
+  .nw .grid .g b{font-weight:600}
+  .nw2{background:linear-gradient(160deg,#4f8f80,#3d7266); border-radius:18px; padding:20px; color:#fff; margin-bottom:18px}
+  .nw2 .lb{font-size:11.5px; opacity:.8; display:flex; justify-content:space-between}
+  .nw2 .big{font-size:29px; font-weight:700; margin:6px 0 20px; letter-spacing:.3px}
+  .nw2 .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:1px solid rgba(255,255,255,.22); padding-top:14px}
+  .nw2 .grid .g{text-align:center; border-right:1px solid rgba(255,255,255,.18)}
+  .nw2 .grid .g:last-child{border-right:0}
+  .nw2 .grid .g .k{font-size:10.5px; opacity:.78}
+  .nw2 .grid .g .v{font-size:14px; font-weight:600; margin-top:3px}
+  .panel{padding:16px; margin-bottom:14px}
+  .ptitle{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px}
+  .ptitle .t{font-size:14px; font-weight:700; color:var(--text)}
+  .ptitle .t .sub{font-size:11px; font-weight:400; color:var(--faint); margin-left:6px}
+  .ptitle .r{font-size:12px; font-weight:600; color:var(--expense)}
+  .ptitle .r.link{color:var(--accent-strong); font-weight:500; font-size:11.5px}
+  .chart{height:80px; width:100%; display:block}
+  .caption{font-size:10.5px; color:var(--faint); line-height:1.55; margin-top:8px}
+  .kpi{display:grid; grid-template-columns:repeat(3,1fr); margin:6px 0 10px}
+  .kpi .k{text-align:center}
+  .kpi .k .kk{font-size:10.5px; color:var(--faint)}
+  .kpi .k .kv{font-size:15px; font-weight:700; margin-top:3px}
+  .kpi .k .kv.g{color:var(--income)} .kpi .k .kv.r{color:var(--expense)}
+  .mutedline{font-size:11px; color:var(--faint); border-top:1px solid var(--border); padding-top:9px; display:flex; justify-content:space-between}
+  .sect{font-size:12px; font-weight:700; color:var(--sub); letter-spacing:.5px; margin:14px 0 8px; display:flex; align-items:center; gap:8px}
+  .sect:after{content:""; flex:1; height:1px; background:var(--border)}
+
+  /* ===== 第三张：语言对照 ===== */
+  .lang{display:flex; gap:26px}
+  .lang .side{flex:1; min-width:0}
+  .lang .side h3{font-size:13px; font-weight:700; margin-bottom:4px}
+  .lang .side .desc{font-size:11.5px; color:#8b877f; margin-bottom:14px; line-height:1.6}
+  .icon-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:9px; margin-bottom:20px}
+  .icon-grid .cell{height:52px; border:1px solid var(--line); border-radius:12px; background:#faf8f4; display:flex; align-items:center; justify-content:center; font-size:22px}
+  .icon-grid .cell.lined{background:var(--accent-soft); color:var(--accent-strong)}
+  .icon-grid .cell.lined .ico{width:22px;height:22px}
+  .swatches{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px}
+  .sw{width:64px; text-align:center}
+  .sw .box{height:38px; border-radius:9px; border:1px solid rgba(0,0,0,.06)}
+  .sw .nm{font-size:9.5px; color:#8b877f; margin-top:5px; line-height:1.35}
+  .mini{margin-top:18px; border-top:1px dashed var(--line); padding-top:14px}
+  .mini .mt{font-size:11px; color:#8b877f; margin-bottom:9px}
+  .mini-nav{display:flex; background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden}
+  .mini-nav .m{flex:1; padding:10px 0; text-align:center; font-size:15px; border-right:1px solid var(--border)}
+  .mini-nav .m:last-child{border-right:0}
+  .mini-nav.lined .m{font-size:10px; color:var(--faint)}
+  .mini-nav.lined .m.on{color:var(--accent-strong)}
+  .mini-nav.lined .m .ico{margin:0 auto 3px; width:17px;height:17px}
+  .mini-row{display:flex; align-items:center; gap:11px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:11px 14px; margin-top:8px; font-size:12.5px}
+  .mini-row .mr-ico{width:28px;height:28px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .mini-row.lined .mr-ico{background:var(--accent-soft); color:var(--accent-strong)}
+  .mini-row.lined .mr-ico .ico{width:16px;height:16px}
+  .mini-row .mr-h{flex:1} .mini-row .mr-t{color:var(--faint); font-size:11px}
+
+  /* ===== 注释 ===== */
+  .notes{display:flex; gap:10px; margin-top:20px; border-top:1px solid var(--line); padding-top:16px}
+  .note{flex:1; background:#faf8f4; border:1px solid var(--line); border-radius:12px; padding:11px 12px; font-size:11.5px; color:#57534c; line-height:1.6}
+  .note b{display:block; font-size:10px; letter-spacing:.6px; color:var(--accent-strong); margin-bottom:5px}
+  .note.flag{background:#fdf7f4; border-color:#efdcd4}
+  .note.flag b{color:#b0715f}
+  .footnote{font-size:11.5px; color:#8b877f; line-height:1.7; margin-top:14px; padding:12px 14px; background:#faf8f4; border-radius:10px; border:1px dashed var(--line)}
+</style>
+</head>
+<body>
+
+<!-- ===== 线性图标库 ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.34a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64h.08A1.7 1.7 0 0 0 10 3.1V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9v.08a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13c0-6 6-9 16-9 0 10-3 16-9 16z"/><path d="M4 20c3-5 7-8 12-10"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="m7 14 4-4 3 2 4-5"/></symbol>
+  <symbol id="i-bowl" viewBox="0 0 24 24"><path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M8 7c0-1 1-2 1-2M12 7c0-1.4 1-2.5 1-2.5M16 7c0-1 1-2 1-2"/><path d="M3 21h18"/></symbol>
+  <symbol id="i-bus" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="15" rx="2"/><path d="M5 11h14M8 18v2M16 18v2"/><circle cx="9" cy="15" r="1"/><circle cx="15" cy="15" r="1"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M5 8h12v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2M4 21h15"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 14h2"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 16h14M6 16V9l2-4h8l2 4v7"/><path d="M4 16v2h3v-2M17 16v2h3v-2"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18h1.5a1.5 1.5 0 0 0 0-3H12a2 2 0 1 1 2-2 1.5 1.5 0 0 0 3 0 9 9 0 0 0-5-13z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-exchange" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10.6 1.5A3.5 3.5 0 0 1 17 18z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+
+<!-- ============ 01 流水页 ============ -->
+<section class="pair" id="shot1">
+  <div class="pair-head">
+    <div class="pair-title">01 / 流水页</div>
+    <div class="pair-sub">同一份数据、同一个页面，只收敛信息层级与排版</div>
+  </div>
+  <div class="pair-body">
+    <div class="col">
+      <div class="col-label bad"><span class="dot"></span>现状 · 一屏里说了三次「你在哪」</div>
+      <div class="phone">
+        <div class="topbar"><span class="t-icon">☰</span><span>小金库</span><span class="grow"></span><span class="t-icon">⚙️</span></div>
+        <div class="screen">
+          <div class="seg"><span class="s">记账</span><span class="s on">流水</span><span class="s">统计</span></div>
+          <div class="h1">流水</div>
+          <div class="input">搜索商户 / 备注</div>
+          <div class="chips"><span class="chip on">本月</span><span class="chip">近3月</span><span class="chip">近6月</span><span class="chip">近1年</span></div>
+          <div class="chips"><span class="chip on">全部</span><span class="chip">支出</span><span class="chip">收入</span></div>
+          <div class="chips"><span class="chip on">全部来源</span><span class="chip">现金</span><span class="chip">信用贷款</span></div>
+          <div class="count">共 4 笔</div>
+          <div class="card daycard">
+            <div class="dayhd">2026-11-24</div>
+            <div class="row"><div class="ico-wrap">🍜</div><div class="mid"><div class="nm">餐饮</div><div class="meta">15:48 · 现金</div></div><div class="amt">− ¥66.00</div><span class="del">🗑</span></div>
+            <div class="row" style="border-top:1px solid var(--border)"><div class="ico-wrap">☕</div><div class="mid"><div class="nm">咖啡</div><div class="meta">09:12 · 现金</div></div><div class="amt">− ¥28.00</div><span class="del">🗑</span></div>
+          </div>
+          <div class="card daycard">
+            <div class="dayhd">2026-11-22</div>
+            <div class="row"><div class="ico-wrap">🚌</div><div class="mid"><div class="nm">交通</div><div class="meta">13:34 · 现金</div></div><div class="amt">− ¥35.00</div><span class="del">🗑</span></div>
+          </div>
+          <div class="card daycard">
+            <div class="dayhd">2026-11-20</div>
+            <div class="row"><div class="ico-wrap">🛍️</div><div class="mid"><div class="nm">购物</div><div class="meta">11:20 · <span style="color:var(--credit)">信用</span></div></div><div class="amt">− ¥240.00</div><span class="del">🗑</span></div>
+          </div>
+        </div>
+        <div class="bottomtab">
+          <div class="tb"><span class="e">🌿</span>概览</div><div class="tb on"><span class="e">📜</span>日常开销</div><div class="tb"><span class="e">📈</span>投资管理</div><div class="tb"><span class="e">⚙️</span>设置</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="col">
+      <div class="col-label good"><span class="dot"></span>改善后 · 两行控件 / 一张连续列表</div>
+      <div class="phone">
+        <div class="topbar"><svg class="ico t-icon"><use href="#i-menu"/></svg><span>流水</span><span class="grow"></span><svg class="ico t-icon"><use href="#i-gear"/></svg></div>
+        <div class="screen">
+          <div class="seg" style="margin-top:2px"><span class="s">记账</span><span class="s on">流水</span><span class="s">统计</span></div>
+          <div class="filterbar">
+            <div class="f-input"><svg class="ico"><use href="#i-search"/></svg>搜索商户 / 备注</div>
+            <div class="f-btn"><svg class="ico" style="width:15px;height:15px"><use href="#i-filter"/></svg>筛选<span class="badge-n">1</span></div>
+          </div>
+          <div class="timeseg"><span class="t on">本月</span><span class="t">近3月</span><span class="t">近6月</span><span class="t">近1年</span></div>
+          <div class="statbar"><span>4 笔交易</span><span>支出 <b>¥369.00</b></span></div>
+          <div class="card listcard">
+            <div class="grouphd"><span>11月24日 · 周一</span><span class="sum">小计 −¥94.00</span></div>
+            <div class="row"><div class="ico-wrap"><svg class="ico"><use href="#i-bowl"/></svg></div><div class="mid"><div class="nm">餐饮</div><div class="meta">15:48 · <span class="tag">现金</span></div></div><div class="amt">− ¥66.00</div><svg class="ico del"><use href="#i-trash"/></svg></div>
+            <div class="row"><div class="ico-wrap"><svg class="ico"><use href="#i-coffee"/></svg></div><div class="mid"><div class="nm">咖啡</div><div class="meta">09:12 · <span class="tag">现金</span></div></div><div class="amt">− ¥28.00</div><svg class="ico del"><use href="#i-trash"/></svg></div>
+            <div class="grouphd"><span>11月22日 · 周六</span><span class="sum">小计 −¥35.00</span></div>
+            <div class="row"><div class="ico-wrap"><svg class="ico"><use href="#i-bus"/></svg></div><div class="mid"><div class="nm">交通</div><div class="meta">13:34 · <span class="tag">现金</span></div></div><div class="amt">− ¥35.00</div><svg class="ico del"><use href="#i-trash"/></svg></div>
+            <div class="grouphd"><span>11月20日 · 周四</span><span class="sum">小计 −¥240.00</span></div>
+            <div class="row"><div class="ico-wrap"><svg class="ico"><use href="#i-bag"/></svg></div><div class="mid"><div class="nm">购物</div><div class="meta">11:20 · <span class="tag">信用</span></div></div><div class="amt">− ¥240.00</div><svg class="ico del"><use href="#i-trash"/></svg></div>
+          </div>
+        </div>
+        <div class="bottomtab">
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-leaf"/></svg>概览</div>
+          <div class="tb on"><svg class="ico" style="width:19px;height:19px"><use href="#i-receipt"/></svg>日常开销</div>
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-chart"/></svg>投资管理</div>
+          <div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-gear"/></svg>设置</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note"><b>01 去重</b>删掉页面内大标题「流水」——分段控件已高亮当前页，顶部栏改为显示页名，一屏少一层重复。</div>
+    <div class="note"><b>02 收纳</b>三行筛选胶囊 → 一行时间分段 + 一个「筛选」入口；类型/来源按需展开。控件从 4 行压到 2 行。</div>
+    <div class="note"><b>03 合并</b>每天一张独立小卡片 → 一张连续列表 + 日期分组小标题；左右边距、行高、卡片内边距统一到同一套间距。</div>
+    <div class="note flag"><b>可剔除项</b>图标由彩色 emoji 换成单色线性图标、金额与标签去掉杂色。这是上次你说暂缓的那项，可单独划掉，不影响前三条。</div>
+  </div>
+</section>
+
+
+<!-- ============ 02 概览页 ============ -->
+<section class="pair" id="shot2">
+  <div class="pair-head">
+    <div class="pair-title">02 / 概览页</div>
+    <div class="pair-sub">标题字阶不一致、卡片内边距混用、渐变与图表各带一套颜色</div>
+  </div>
+  <div class="pair-body">
+    <div class="col">
+      <div class="col-label bad"><span class="dot"></span>现状 · 每张卡片都在强调自己</div>
+      <div class="phone">
+        <div class="topbar"><span class="t-icon">☰</span><span>小金库</span><span class="grow"></span><span class="t-icon">⚙️</span></div>
+        <div class="screen">
+          <div class="nw">
+            <div class="lb">净资产（2026年11月）</div>
+            <div class="big">¥249,017.00</div>
+            <div class="grid">
+              <div class="g"><span>现金</span><b>¥8.60万</b></div><div class="g"><span>投资市值</span><b>¥25.04万</b></div>
+              <div class="g"><span>信用负债</span><b>¥540.00</b></div><div class="g"><span>长期负债</span><b>¥8.68万</b></div>
+            </div>
+          </div>
+          <div class="card panel">
+            <div class="ptitle"><span class="t">净资产走势 · 近一年</span><span class="r">−¥50,983.00</span></div>
+            <svg class="chart" viewBox="0 0 300 96" preserveAspectRatio="none">
+              <defs><linearGradient id="gA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e5736b" stop-opacity=".28"/><stop offset="1" stop-color="#e5736b" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0 24 L40 22 L80 26 L120 20 L160 28 L200 24 L240 30 L270 58 L300 72 L300 96 L0 96 Z" fill="url(#gA)"/>
+              <path d="M0 24 L40 22 L80 26 L120 20 L160 28 L200 24 L240 30 L270 58 L300 72" fill="none" stroke="#e5736b" stroke-width="2.2"/>
+            </svg>
+            <div class="caption">现金与负债按交易台账精确推导至各月末；投资部分为「当月持股 × 当前价」的估算值。</div>
+          </div>
+          <div class="card panel">
+            <div class="ptitle"><span class="t">日常开销概览</span><span class="r link">统计 ›</span></div>
+            <div class="kpi"><div class="k"><div class="kk">本月收入</div><div class="kv g">¥1.85万</div></div><div class="k"><div class="kk">本月支出</div><div class="kv r">¥5,423.00</div></div><div class="k"><div class="kk">净额</div><div class="kv g">+¥1.31万</div></div></div>
+            <div class="mutedline"><span>较上月　支出 —　收入 —</span></div>
+            <div class="mutedline" style="border-top:0;padding-top:6px"><span>本年累计　支出 ¥5,423.00</span><span style="color:var(--income);font-weight:600">结余 +¥13,077.00</span></div>
+          </div>
+          <div class="card panel" style="padding:13px"><div class="ptitle" style="margin:0"><span class="t">投资情况概览</span><span class="r link">›</span></div></div>
+        </div>
+        <div class="bottomtab"><div class="tb on"><span class="e">🌿</span>概览</div><div class="tb"><span class="e">📜</span>日常开销</div><div class="tb"><span class="e">📈</span>投资管理</div><div class="tb"><span class="e">⚙️</span>设置</div></div>
+      </div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <div class="col">
+      <div class="col-label good"><span class="dot"></span>改善后 · 同一套标题字阶 / 同一套内边距</div>
+      <div class="phone">
+        <div class="topbar"><svg class="ico t-icon"><use href="#i-menu"/></svg><span>概览</span><span class="grow"></span><svg class="ico t-icon"><use href="#i-gear"/></svg></div>
+        <div class="screen">
+          <div class="nw2">
+            <div class="lb"><span>净资产</span><span>2026年11月</span></div>
+            <div class="big">¥249,017.00</div>
+            <div class="grid">
+              <div class="g"><div class="k">现金</div><div class="v">¥8.60万</div></div>
+              <div class="g"><div class="k">投资市值</div><div class="v">¥25.04万</div></div>
+              <div class="g"><div class="k">总负债</div><div class="v">¥8.73万</div></div>
+            </div>
+          </div>
+          <div class="sect">走势 <span style="font-weight:400;color:var(--faint);letter-spacing:0">近一年</span> <span style="margin-left:auto;font-size:11.5px;font-weight:600;color:var(--expense)">−¥50,983.00</span></div>
+          <div class="card panel">
+            <svg class="chart" viewBox="0 0 300 96" preserveAspectRatio="none">
+              <defs><linearGradient id="gB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d7266" stop-opacity=".20"/><stop offset="1" stop-color="#3d7266" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0 24 L40 22 L80 26 L120 20 L160 28 L200 24 L240 30 L270 58 L300 72 L300 96 L0 96 Z" fill="url(#gB)"/>
+              <path d="M0 24 L40 22 L80 26 L120 20 L160 28 L200 24 L240 30 L270 58 L300 72" fill="none" stroke="#3d7266" stroke-width="2.2"/>
+            </svg>
+            <div class="caption">现金与负债按台账精确推导；投资部分为「当月持股 × 当前价」估算。</div>
+          </div>
+          <div class="sect">日常开销 <span class="r link" style="margin-left:auto;font-size:11.5px;color:var(--accent-strong);font-weight:500">统计 ›</span></div>
+          <div class="card panel">
+            <div class="kpi"><div class="k"><div class="kk">本月收入</div><div class="kv g">¥1.85万</div></div><div class="k"><div class="kk">本月支出</div><div class="kv r">¥5,423.00</div></div><div class="k"><div class="kk">净额</div><div class="kv g">+¥1.31万</div></div></div>
+            <div class="mutedline"><span>本年累计支出 ¥5,423.00</span><span style="color:var(--income);font-weight:600">结余 +¥13,077.00</span></div>
+          </div>
+          <div class="sect">投资 <span class="r link" style="margin-left:auto;font-size:11.5px;color:var(--accent-strong);font-weight:500">查看 ›</span></div>
+          <div style="font-size:11.5px;color:var(--faint);padding:0 2px">4 只持仓 · 市值 ¥25.04万</div>
+        </div>
+        <div class="bottomtab"><div class="tb on"><svg class="ico" style="width:19px;height:19px"><use href="#i-leaf"/></svg>概览</div><div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-receipt"/></svg>日常开销</div><div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-chart"/></svg>投资管理</div><div class="tb"><svg class="ico" style="width:19px;height:19px"><use href="#i-gear"/></svg>设置</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note"><b>01 标题归一</b>「净资产走势·近一年 / 日常开销概览 / 投资情况概览」→ 统一小节标题「走势 / 日常开销 / 投资」，副信息降为小字，三个标题不再互相抢。</div>
+    <div class="note"><b>02 间距归一</b>卡片内边距统一 16px、卡片间距统一 16px、字阶固定三档；2×2 挤在一起的小数字改为一行三栏加细分隔。</div>
+    <div class="note"><b>03 颜色收敛</b>强饱和渐变大卡降为低饱和主色；图表从橙红改为主色系，红色只留给亏损与支出数字，色板从「每种数据一套色」收敛到「主色 + 灰阶 + 两个语义色」。</div>
+    <div class="note flag"><b>不动的部分</b>数据口径、卡片顺序、切换方式全部照旧，改的只是层级、间距和配色；底部导航机制保持原样。</div>
+  </div>
+</section>
+
+
+<!-- ============ 03 全局语言 ============ -->
+<section class="pair wide" id="shot3">
+  <div class="pair-head">
+    <div class="pair-title">03 / 全局语言：图标与颜色</div>
+    <div class="pair-sub">「杂乱」最直观的来源——同一屏里出现太多套图标风格与颜色体系</div>
+  </div>
+  <div class="lang">
+    <div class="side">
+      <h3>现状</h3>
+      <div class="desc">约 85 处 emoji：彩色、造型各异、尺寸随字号漂移；分类、导航、设置、删除都用不同来源的图形。</div>
+      <div class="icon-grid">
+        <div class="cell">🌿</div><div class="cell">🧾</div><div class="cell">📈</div><div class="cell">⚙️</div><div class="cell">💰</div><div class="cell">🚗</div><div class="cell">🗂</div>
+        <div class="cell">📦</div><div class="cell">🎨</div><div class="cell">🔒</div><div class="cell">💱</div><div class="cell">☁️</div><div class="cell">🍜</div><div class="cell">🚌</div>
+        <div class="cell">🛍️</div><div class="cell">💸</div><div class="cell">🗑</div><div class="cell">📥</div><div class="cell">📤</div><div class="cell">💳</div><div class="cell">🔔</div>
+      </div>
+      <h3 style="margin-top:2px">色板：来源过多</h3>
+      <div class="desc">渐变大卡、主色、图表橙红、支出红、收入绿、信用紫、警示黄各自成体系。</div>
+      <div class="swatches">
+        <div class="sw"><div class="box" style="background:linear-gradient(135deg,#7ec8b4,#3d7266)"></div><div class="nm">渐变卡</div></div>
+        <div class="sw"><div class="box" style="background:#5fa896"></div><div class="nm">主色</div></div>
+        <div class="sw"><div class="box" style="background:#e5736b"></div><div class="nm">图表</div></div>
+        <div class="sw"><div class="box" style="background:#ce3823"></div><div class="nm">支出</div></div>
+        <div class="sw"><div class="box" style="background:#367c5e"></div><div class="nm">收入</div></div>
+        <div class="sw"><div class="box" style="background:#8f53c3"></div><div class="nm">信用</div></div>
+        <div class="sw"><div class="box" style="background:#e6b25a"></div><div class="nm">警示</div></div>
+        <div class="sw"><div class="box" style="background:#736d7b"></div><div class="nm">次要字</div></div>
+      </div>
+      <div class="mini">
+        <div class="mt">落到界面上（底部导航 + 设置行）</div>
+        <div class="mini-nav"><div class="m">🌿</div><div class="m">📜</div><div class="m">📈</div><div class="m">⚙️</div></div>
+        <div class="mini-row"><div class="mr-ico">💰</div><div class="mr-h">资产负债</div><div class="mr-t">¥249,017.00</div></div>
+        <div class="mini-row"><div class="mr-ico">🎨</div><div class="mr-h">外观</div><div class="mr-t">浅色</div></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <h3>改善后</h3>
+      <div class="desc">同一套线性图标：24 格、1.75 线宽、统一圆角端点、统一圆底与尺寸；颜色只由当前状态决定，不由图标本身决定。</div>
+      <div class="icon-grid">
+        <div class="cell lined"><svg class="ico"><use href="#i-leaf"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-receipt"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-chart"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-gear"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-wallet"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-car"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-folder"/></svg></div>
+        <div class="cell lined"><svg class="ico"><use href="#i-archive"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-palette"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-lock"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-exchange"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-cloud"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-bowl"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-bus"/></svg></div>
+        <div class="cell lined"><svg class="ico"><use href="#i-bag"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-coffee"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-trash"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-plus"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-search"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-filter"/></svg></div><div class="cell lined"><svg class="ico"><use href="#i-menu"/></svg></div>
+      </div>
+      <h3 style="margin-top:2px">色板：收敛为 3 组</h3>
+      <div class="desc">主色（操作/选中）+ 中性灰阶（文字/边框/底色）+ 两个语义色（收入/支出）。图表沿用主色系。</div>
+      <div class="swatches">
+        <div class="sw"><div class="box" style="background:#3d7266"></div><div class="nm">主色</div></div>
+        <div class="sw"><div class="box" style="background:#e7f1ed"></div><div class="nm">主色浅底</div></div>
+        <div class="sw"><div class="box" style="background:#2e2c33"></div><div class="nm">主要字</div></div>
+        <div class="sw"><div class="box" style="background:#716e79"></div><div class="nm">次要字</div></div>
+        <div class="sw"><div class="box" style="background:#f6f3ee"></div><div class="nm">页面底</div></div>
+        <div class="sw"><div class="box" style="background:#367c5e"></div><div class="nm">收入</div></div>
+        <div class="sw"><div class="box" style="background:#ce3823"></div><div class="nm">支出</div></div>
+      </div>
+      <div class="mini">
+        <div class="mt">落到界面上（底部导航 + 设置行）</div>
+        <div class="mini-nav lined"><div class="m on"><svg class="ico"><use href="#i-leaf"/></svg>概览</div><div class="m"><svg class="ico"><use href="#i-receipt"/></svg>日常开销</div><div class="m"><svg class="ico"><use href="#i-chart"/></svg>投资管理</div><div class="m"><svg class="ico"><use href="#i-gear"/></svg>设置</div></div>
+        <div class="mini-row lined"><div class="mr-ico"><svg class="ico"><use href="#i-wallet"/></svg></div><div class="mr-h">资产负债</div><div class="mr-t">¥249,017.00</div></div>
+        <div class="mini-row lined"><div class="mr-ico"><svg class="ico"><use href="#i-palette"/></svg></div><div class="mr-h">外观</div><div class="mr-t">浅色</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="footnote">说明：这一整块（图标由 emoji 换成统一线性图标）正是上次你判定「暂时没什么意义、体验良好」而暂缓的那一项。这里只把它画出来供你用眼睛判断——如果你仍不需要，直接划掉即可，01 与 02 的层级／间距／配色收敛不依赖它，照样成立。此稿为静态视觉预览，未改动 app/src 中任何代码。</div>
+</section>
+
+</body>
+</html>

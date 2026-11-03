@@ -1,4 +1,5 @@
 import { useStore } from '@/store/useStore'
+import { Glyph } from '@/components/Icon'
 import SubPage from './SubPage'
 import type { ThemeMode } from '@/types'
 
@@ -12,17 +13,17 @@ export default function Appearance() {
         <div className="seg w-full">
           {(
             [
-              ['light', '☀️ 浅色'],
-              ['dark', '🌙 深色'],
-              ['system', '📱 跟随系统'],
-            ] as [ThemeMode, string][]
-          ).map(([m, label]) => (
+              ['light', '浅色', 'sun'],
+              ['dark', '深色', 'moon'],
+              ['system', '跟随系统', 'smartphone'],
+            ] as [ThemeMode, string, string][]
+          ).map(([m, label, icon]) => (
             <button
               key={m}
               onClick={() => setTheme(m)}
-              className={`seg-item flex-1 ${theme === m ? 'seg-item-active' : ''}`}
+              className={`seg-item flex-1 flex items-center justify-center gap-1 ${theme === m ? 'seg-item-active' : ''}`}
             >
-              {label}
+              <Glyph value={icon} size={15} /> {label}
             </button>
           ))}
         </div>

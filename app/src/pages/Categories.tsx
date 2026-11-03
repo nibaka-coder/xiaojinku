@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Glyph } from '@/components/Icon'
 import { useStore } from '@/store/useStore'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import type { Category } from '@/types'
@@ -78,10 +79,10 @@ export default function Categories() {
               className="card-2 w-full text-left flex items-center gap-3 active:bg-[var(--border)]"
             >
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0"
-                style={{ backgroundColor: c.color + '22' }}
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
               >
-                {c.icon}
+                <Glyph value={c.icon} size={20} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-main">{c.name}</div>
@@ -136,7 +137,7 @@ export default function Categories() {
                     }`}
                     style={editing.icon === ic ? { boxShadow: '0 0 0 2px var(--accent)' } : undefined}
                   >
-                    {ic}
+                    <Glyph value={ic} size={20} style={{ verticalAlign: 'middle' }} />
                   </button>
                 ))}
               </div>

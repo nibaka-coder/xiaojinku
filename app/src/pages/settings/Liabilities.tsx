@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Glyph } from '@/components/Icon'
 import { useStore } from '@/store/useStore'
 import { liabilityCurrentBalance } from '@/lib/calc'
 import { fmtMoney } from '@/lib/money'
@@ -69,8 +70,8 @@ export default function Liabilities() {
               onClick={() => setEditing({ ...l })}
               className="card-2 w-full text-left flex items-center gap-3 active:bg-[var(--border)]"
             >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 bg-card-2">
-                {l.icon ?? '📦'}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}>
+                <Glyph value={l.icon ?? 'box'} size={20} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-main">{l.name}</div>
@@ -131,7 +132,7 @@ export default function Liabilities() {
                       className={`w-9 h-9 rounded-lg text-lg ${editing.icon === ic ? '' : 'bg-card-2'}`}
                       style={editing.icon === ic ? { boxShadow: '0 0 0 2px var(--accent)' } : undefined}
                     >
-                      {ic}
+                      <Glyph value={ic} size={20} style={{ verticalAlign: 'middle' }} />
                     </button>
                   ))}
                 </div>

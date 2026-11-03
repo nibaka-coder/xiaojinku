@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Glyph } from '@/components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { cashBalance, investSummary, liabilitiesTotal, netWorth } from '@/lib/calc'
@@ -30,8 +31,8 @@ function Row({ item }: { item: Item }) {
       onClick={() => navigate(item.to)}
       className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-[var(--card-2)]"
     >
-      <span className="w-7 h-7 rounded-lg flex items-center justify-center text-base bg-card-2 shrink-0">
-        {item.icon}
+      <span className="glyph-tile shrink-0">
+        <Glyph value={item.icon} size={16} />
       </span>
       <span className="flex-1 text-main text-sm">{item.label}</span>
       <span className="text-xs text-faint truncate max-w-[45%]">{item.hint}</span>
@@ -141,7 +142,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-lg font-semibold text-main">设置</h1>
+      <h1 className="text-lg font-semibold text-main hidden md:block">设置</h1>
 
       {/* 净资产速览：最常用的一个数，点开进资产负债 */}
       <button

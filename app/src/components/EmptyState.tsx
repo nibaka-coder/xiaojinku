@@ -1,3 +1,5 @@
+import { Glyph } from '@/components/Icon'
+
 export default function EmptyState({
   icon = '🌱',
   title,
@@ -13,8 +15,8 @@ export default function EmptyState({
 }) {
   return (
     <div className="empty">
-      <div className="empty-icon" aria-hidden="true">
-        {icon}
+      <div className="empty-icon" aria-hidden="true" style={{ color: 'var(--accent-strong)' }}>
+        <Glyph value={icon} size={26} />
       </div>
       <div className="empty-title">{title}</div>
       {desc && <div className="empty-desc">{desc}</div>}

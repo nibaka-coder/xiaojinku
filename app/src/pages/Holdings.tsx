@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Icon } from '@/components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { investSummary, deriveHolding, deriveLots, sharesHeldAt } from '@/lib/calc'
@@ -140,7 +141,7 @@ export default function Holdings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-main">持仓总览</h1>
+          <h1 className="text-lg font-semibold text-main hidden md:block">持仓总览</h1>
           <div className="text-xs text-faint mt-0.5">{quoteAgeText(latestQuoteAt)}</div>
         </div>
         <button className="btn-ghost text-sm" onClick={onRefresh} disabled={refreshing}>
@@ -182,7 +183,7 @@ export default function Holdings() {
           style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
           onClick={() => navigate('/invest/dividends')}
         >
-          💰 发现 {pendingTotal} 笔分红待入账 · 去确认 →
+          <Icon name="wallet" size={14} style={{ verticalAlign: '-2px' }} /> 发现 {pendingTotal} 笔分红待入账 · 去确认 →
         </button>
       )}
 
@@ -199,7 +200,7 @@ export default function Holdings() {
       {holdings.length === 0 ? (
         <div className="card">
           <EmptyState
-            icon="📈"
+            icon="chart"
             title="还没有持仓"
             desc="记下第一笔买入后，这里会自动算出持仓市值与盈亏"
             actionText="去记一笔买入"
@@ -248,7 +249,7 @@ export default function Holdings() {
                   style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
                   onClick={() => navigate('/invest/dividends')}
                 >
-                  💰 {pendingBySec[h.security.id]} 笔分红待入账 · 去确认 →
+                  <Icon name="wallet" size={14} style={{ verticalAlign: '-2px' }} /> {pendingBySec[h.security.id]} 笔分红待入账 · 去确认 →
                 </button>
               )}
             </div>
@@ -319,7 +320,7 @@ export default function Holdings() {
                 className="mt-2 rounded-lg p-3 text-sm"
                 style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger-text)' }}
               >
-                ⚠️ 确认删除「{manageSec.name}」吗？该证券及其全部交易将永久删除，不可撤销。
+                <Icon name="warning" size={14} style={{ verticalAlign: '-2px' }} /> 确认删除「{manageSec.name}」吗？该证券及其全部交易将永久删除，不可撤销。
               </div>
             )}
           </div>

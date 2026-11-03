@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate, NavLink } from 'react-router-dom'
+import { Icon, Glyph } from '@/components/Icon'
 
 type NavChild = { to: string; label: string }
 type NavItem =
@@ -7,10 +8,10 @@ type NavItem =
   | { label: string; icon: string; children: NavChild[] }
 
 const NAV: NavItem[] = [
-  { to: '/', label: '概览', icon: '🌿', single: true },
+  { to: '/', label: '概览', icon: 'leaf', single: true },
   {
     label: '日常开销',
-    icon: '🧾',
+    icon: 'receipt',
     children: [
       { to: '/add', label: '记账' },
       { to: '/transactions', label: '流水' },
@@ -19,14 +20,14 @@ const NAV: NavItem[] = [
   },
   {
     label: '投资管理',
-    icon: '📈',
+    icon: 'chart',
     children: [
       { to: '/invest/holdings', label: '持仓总览' },
       { to: '/invest/trades', label: '交易记录' },
       { to: '/invest/dividends', label: '分红助手' },
     ],
   },
-  { to: '/settings', label: '设置', icon: '⚙️', single: true },
+  { to: '/settings', label: '设置', icon: 'gear', single: true },
 ]
 
 const DAILY = ['/add', '/transactions', '/statistics']
@@ -34,6 +35,24 @@ const DAILY_LABELS = ['记账', '流水', '统计']
 
 const INVEST = ['/invest/holdings', '/invest/trades', '/invest/dividends']
 const INVEST_LABELS = ['持仓', '记录', '分红']
+
+// 移动端顶部栏显示当前页名；页面内的大标题只在桌面端保留（侧边栏高亮已指示位置）
+const PAGE_TITLES: Record<string, string> = {
+  '/': '概览',
+  '/add': '记账',
+  '/transactions': '流水',
+  '/statistics': '统计',
+  '/invest/holdings': '持仓总览',
+  '/invest/trades': '交易记录',
+  '/invest/dividends': '分红助手',
+  '/invest/add': '记一笔投资',
+  '/settings': '设置',
+}
+function pageTitle(path: string): string {
+  if (PAGE_TITLES[path]) return PAGE_TITLES[path]
+  if (path.startsWith('/settings/')) return '设置'
+  return '小金库'
+}
 
 function isActiveGroup(item: NavItem, path: string): boolean {
   if (item.single) return path === item.to
@@ -59,7 +78,12 @@ export default function Layout() {
   const Sidebar = (
     <nav className="flex flex-col gap-1 px-3 py-3">
       <div className="flex items-center gap-2 px-2 py-3 mb-1">
-        <div className="w-8 h-8 rounded-xl bg-sage-400 flex items-center justify-center text-lg">🌱</div>
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center"
+          style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
+        >
+          <Icon name="leaf" size={18} />
+        </div>
         <span className="text-[15px] font-semibold text-main">小金库</span>
       </div>
       {NAV.map((item) =>
@@ -71,7 +95,9 @@ export default function Layout() {
             onClick={() => setOpen(false)}
             className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
           >
-            <span className="text-lg">{item.icon}</span>
+            <span className="w-5 h-5 flex items-center justify-center shrink-0">
+              <Glyph value={item.icon} size={19} />
+            </span>
             <span>{item.label}</span>
           </NavLink>
         ) : (
@@ -80,9 +106,11 @@ export default function Layout() {
               onClick={() => toggleGroup(item.label)}
               className={`nav-link w-full ${isActiveGroup(item, path) ? 'nav-link-active' : ''}`}
             >
-              <span className="text-lg">{item.icon}</span>
+              <span className="w-5 h-5 flex items-center justify-center shrink-0">
+                <Glyph value={item.icon} size={19} />
+              </span>
               <span className="flex-1 text-left">{item.label}</span>
-              <span className="text-xs text-faint">{expanded[item.label] ? '▾' : '▸'}</span>
+              <Icon name={expanded[item.label] ? 'chevronDown' : 'chevron'} size={14} />
             </button>
             {expanded[item.label] && (
               <div className="mt-0.5 mb-1">
@@ -129,21 +157,24 @@ export default function Layout() {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* 移动端顶部栏 */}
+        {/* 移动端顶部栏：显示当前页名，不再重复品牌名 + 页面标题 */}
         <header className="md:hidden sticky top-0 z-30 flex items-center gap-3 bg-glass backdrop-blur-xl border-b border-soft px-4 h-14">
-          <button onClick={() => setOpen(true)} className="text-xl text-sub leading-none">☰</button>
-          <span className="font-semibold text-main">小金库</span>
+          <button onClick={() => setOpen(true)} className="text-sub leading-none" aria-label="打开菜单">
+            <Icon name="menu" size={20} />
+          </button>
+          <span className="font-semibold text-main">{pageTitle(path)}</span>
           <button
             onClick={() => navigate('/settings')}
-            className="ml-auto text-xl text-sub leading-none"
+            className="ml-auto text-sub leading-none"
+            aria-label="设置"
           >
-            ⚙️
+            <Icon name="gear" size={19} />
           </button>
         </header>
 
         <main className="flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-10 pt-4 md:px-8 md:pt-6 w-full">
           <div className="max-w-3xl mx-auto w-full">
-            {/* 移动端：日常开销 / 投资管理 分段切换 */}
+            {/* 移动端：日常开销 / 投资管理 分段切换（导航机制不变） */}
             {inDaily && (
               <div className="md:hidden mb-4">
                 <div className="seg w-full">
@@ -201,7 +232,7 @@ export default function Layout() {
                     active ? 'text-sage-600' : 'text-faint'
                   }`}
                 >
-                  <span className="text-xl">{icon}</span>
+                  <Glyph value={icon} size={20} />
                   <span className="text-[11px] font-medium">{label}</span>
                 </button>
               )

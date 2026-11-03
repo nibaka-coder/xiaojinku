@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Glyph, Icon } from '@/components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import Modal from '@/components/Modal'
@@ -149,7 +150,7 @@ export default function AddTransaction() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-main">{editId ? '编辑交易' : '记账'}</h1>
+        <h1 className="text-lg font-semibold text-main hidden md:block">{editId ? '编辑交易' : '记账'}</h1>
         {editId && (
           <button onClick={onDelete} className="text-sm" style={{ color: 'var(--danger-text)' }}>
             删除
@@ -217,7 +218,7 @@ export default function AddTransaction() {
             </button>
           </div>
           <div className="card-2 text-sm" style={{ color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}>
-            📌 投资转账只影响现金余额，不计入日常开销、预算与分类统计。买股选「转出」，卖出回款选「回收」。
+            <Icon name="pin" size={14} style={{ verticalAlign: '-2px' }} /> 投资转账只影响现金余额，不计入日常开销、预算与分类统计。买股选「转出」，卖出回款选「回收」。
           </div>
         </div>
       )}
@@ -239,7 +240,7 @@ export default function AddTransaction() {
                     : undefined
                 }
               >
-                <span className="text-xl">{c.icon}</span>
+                <span className="text-xl"><Glyph value={c.icon} size={20} /></span>
                 <span>{c.name}</span>
               </button>
             ))}
@@ -260,7 +261,7 @@ export default function AddTransaction() {
                 onClick={() => setFundSource(f.key)}
                 className={`seg-item ${fundSource === f.key ? 'seg-item-active' : ''}`}
               >
-                {f.icon} {f.label}
+                <Glyph value={f.icon} size={15} style={{ verticalAlign: '-2px' }} /> {f.label}
               </button>
             ))}
           </div>
@@ -314,7 +315,7 @@ export default function AddTransaction() {
                 className="card-2 text-sm"
                 style={{ color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
               >
-                📌 {amortizeStartYm} ~ {endYm} 共 {months} 个月，每月计入成本{' '}
+                <Icon name="pin" size={14} style={{ verticalAlign: '-2px' }} /> {amortizeStartYm} ~ {endYm} 共 {months} 个月，每月计入成本{' '}
                 <strong>{fmtMoney(perMonth, 'CNY')}</strong>
                 {amount > 0 && `（总额 ${fmtMoney(amount, 'CNY')}）`}。
                 <br />
@@ -336,13 +337,13 @@ export default function AddTransaction() {
             >
               {liabOptions.map((o) => (
                 <option key={o.id} value={o.id}>
-                  {o.icon} {o.name}
+                  <Glyph value={o.icon} size={15} style={{ verticalAlign: '-2px' }} /> {o.name}
                 </option>
               ))}
             </select>
           </div>
           <div className="card-2 text-sm" style={{ color: 'var(--credit-text)', background: 'var(--credit-soft)' }}>
-            ✅ 这是一笔还款：将从现金扣减，并冲减「{targetObj?.name ?? '信用贷款'}」当前待还 {fmtMoney(targetBalance, 'CNY')}。
+            <Icon name="check" size={14} style={{ verticalAlign: '-2px' }} /> 这是一笔还款：将从现金扣减，并冲减「{targetObj?.name ?? '信用贷款'}」当前待还 {fmtMoney(targetBalance, 'CNY')}。
           </div>
         </div>
       )}

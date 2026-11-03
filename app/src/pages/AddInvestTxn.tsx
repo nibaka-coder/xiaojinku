@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useRef, useState } from 'react'
+import { Icon } from '@/components/Icon'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { deriveLots } from '@/lib/calc'
@@ -192,7 +193,7 @@ export default function AddInvestTxn() {
         <button className="text-xl text-sub" onClick={() => navigate(-1)}>
           ‹
         </button>
-        <h1 className="text-lg font-semibold text-main">{editId ? '编辑交易' : '记一笔投资'}</h1>
+        <h1 className="text-lg font-semibold text-main hidden md:block">{editId ? '编辑交易' : '记一笔投资'}</h1>
       </div>
 
       {/* 类型 */}
@@ -287,7 +288,7 @@ export default function AddInvestTxn() {
           className="card-2 text-sm"
           style={{ color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
         >
-          📌 送股 / 转增 / 拆股只填「股数变动量」：送股填正数（如 10 送 10，持 1000 股就填 1000），合股填负数。总成本不变，每股成本会自动摊薄。
+          <Icon name="pin" size={14} style={{ verticalAlign: '-2px' }} /> 送股 / 转增 / 拆股只填「股数变动量」：送股填正数（如 10 送 10，持 1000 股就填 1000），合股填负数。总成本不变，每股成本会自动摊薄。
         </div>
       )}
 

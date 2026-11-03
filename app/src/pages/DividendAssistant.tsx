@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Icon } from '@/components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { fmtMoney } from '@/lib/money'
@@ -126,7 +127,7 @@ export default function DividendAssistant() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-main">分红助手</h1>
+        <h1 className="text-lg font-semibold text-main hidden md:block">分红助手</h1>
         <button
           className="text-sm"
           style={{ color: 'var(--accent-strong)' }}
@@ -148,7 +149,7 @@ export default function DividendAssistant() {
 
       {doneMsg && (
         <div className="card-2 text-sm" style={{ color: 'var(--income-text)', background: 'var(--accent-soft)' }}>
-          ✓ {doneMsg}
+          <Icon name="check" size={14} style={{ verticalAlign: '-2px' }} /> {doneMsg}
         </div>
       )}
 

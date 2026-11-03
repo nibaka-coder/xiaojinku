@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Icon } from '@/components/Icon'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/store/useStore'
 import { fmtMoney } from '@/lib/money'
@@ -121,8 +122,8 @@ export default function Trades() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-main">交易记录</h1>
+      <div className="flex items-center justify-end md:justify-between">
+        <h1 className="text-lg font-semibold text-main hidden md:block">交易记录</h1>
         <div className="flex items-center gap-2">
           <button className="btn-ghost text-sm" onClick={onRefresh} disabled={refreshing}>
             {refreshing ? '刷新中…' : '↻ 刷新行情'}
@@ -140,7 +141,7 @@ export default function Trades() {
           style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}
           onClick={() => navigate('/invest/dividends')}
         >
-          💰 发现 {pendingCount} 笔分红待入账 · 去确认 →
+          <Icon name="wallet" size={14} style={{ verticalAlign: '-2px' }} /> 发现 {pendingCount} 笔分红待入账 · 去确认 →
         </button>
       )}
 
@@ -168,7 +169,7 @@ export default function Trades() {
       {list.length === 0 ? (
         <div className="card">
           <EmptyState
-            icon="📈"
+            icon="chart"
             title="暂无交易记录"
             desc="买入、卖出与分红都会出现在这里"
           />
@@ -297,7 +298,7 @@ export default function Trades() {
                           onClick={() => setDelId(t.id)}
                           aria-label="删除"
                         >
-                          🗑
+                          <Icon name="trash" size={15} />
                         </button>
                       </div>
                     </div>

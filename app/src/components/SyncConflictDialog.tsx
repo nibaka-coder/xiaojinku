@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Icon } from '@/components/Icon'
 import Modal from '@/components/Modal'
 import { fmtMoney } from '@/lib/money'
 
@@ -67,7 +68,7 @@ export default function SyncConflictDialog({
           </div>
         </div>
         <div className="text-xs" style={{ color: 'var(--danger-text)' }}>
-          ⚠️ 选择后未被选中的一方数据将被覆盖，此操作不可撤销。建议先各导出一份备份。
+          <Icon name="warning" size={14} style={{ verticalAlign: '-2px' }} /> 选择后未被选中的一方数据将被覆盖，此操作不可撤销。建议先各导出一份备份。
         </div>
       </div>
       <div className="flex gap-2 mt-4">

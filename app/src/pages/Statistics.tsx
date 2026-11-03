@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Glyph } from '@/components/Icon'
 import type { EChartsOption } from 'echarts'
 import { useStore } from '@/store/useStore'
 import { trend, categoryBreakdownRange, periodSummary, topExpenses, isAmortized } from '@/lib/calc'
@@ -111,7 +112,7 @@ export default function Statistics() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold text-main">统计</h1>
+      <h1 className="text-lg font-semibold text-main hidden md:block">统计</h1>
 
       <div className="flex gap-2 text-sm overflow-x-auto">
         {RANGES.map((r) => (
@@ -198,7 +199,7 @@ export default function Statistics() {
                   >
                     {i + 1}
                   </span>
-                  <span className="text-base shrink-0">{cat?.icon ?? '💸'}</span>
+                  <span className="shrink-0" style={{ color: 'var(--accent-strong)' }}><Glyph value={cat?.icon ?? 'wallet'} size={18} /></span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-main truncate">
                       {t.note || t.payee || cat?.name || '交易'}
