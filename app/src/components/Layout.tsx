@@ -163,13 +163,6 @@ export default function Layout() {
             <Icon name="menu" size={20} />
           </button>
           <span className="font-semibold text-main">{pageTitle(path)}</span>
-          <button
-            onClick={() => navigate('/settings')}
-            className="ml-auto text-sub leading-none"
-            aria-label="设置"
-          >
-            <Icon name="gear" size={19} />
-          </button>
         </header>
 
         <main className="flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-10 pt-4 md:px-8 md:pt-6 w-full">

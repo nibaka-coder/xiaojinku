@@ -158,7 +158,7 @@ export default function AddTransaction() {
         )}
       </div>
 
-      <div className="seg w-full">
+      <div className="seg-quiet">
         {MODES.map((m) => (
           <button
             key={m.key}
@@ -179,7 +179,7 @@ export default function AddTransaction() {
               }
               setCategoryId('')
             }}
-            className={`seg-item flex-1 whitespace-nowrap ${mode === m.key ? 'seg-item-active' : ''}`}
+            className={`seg-quiet-item whitespace-nowrap ${mode === m.key ? 'seg-quiet-item-active' : ''}`}
           >
             {m.label}
           </button>
@@ -203,16 +203,16 @@ export default function AddTransaction() {
 
       {isTransfer && (
         <div className="space-y-3">
-          <div className="seg w-full">
+          <div className="seg-quiet">
             <button
               onClick={() => setTransferDir('out')}
-              className={`seg-item flex-1 ${transferDir === 'out' ? 'seg-item-active' : ''}`}
+              className={`seg-quiet-item ${transferDir === 'out' ? 'seg-quiet-item-active' : ''}`}
             >
               转出（现金 → 券商）
             </button>
             <button
               onClick={() => setTransferDir('in')}
-              className={`seg-item flex-1 ${transferDir === 'in' ? 'seg-item-active' : ''}`}
+              className={`seg-quiet-item ${transferDir === 'in' ? 'seg-quiet-item-active' : ''}`}
             >
               回收（券商 → 现金）
             </button>
@@ -254,12 +254,12 @@ export default function AddTransaction() {
       {!isRepayment && !isTransfer && type === 'expense' && (
         <div>
           <label className="label">资金来源</label>
-          <div className="seg w-full">
+          <div className="seg-quiet">
             {FUND_SOURCES.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFundSource(f.key)}
-                className={`seg-item ${fundSource === f.key ? 'seg-item-active' : ''}`}
+                className={`seg-quiet-item ${fundSource === f.key ? 'seg-quiet-item-active' : ''}`}
               >
                 <Glyph value={f.icon} size={15} style={{ verticalAlign: '-2px' }} /> {f.label}
               </button>

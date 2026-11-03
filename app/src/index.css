@@ -372,6 +372,49 @@ body {
     box-shadow: 0 1px 2px rgba(40, 38, 52, 0.08);
   }
 
+  /* 表单内轻量分段（方案 A）：无底槽 / 无亮块，选中态用主色文字 + 短下划线。
+     与「点了会跳页」的 .seg 导航形成层级区分；浅/暗两档沿用已有 token，不写死色值。 */
+  .seg-quiet {
+    display: flex;
+    width: 100%;
+    gap: 2px;
+  }
+  .seg-quiet-item {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: 8px 0 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-faint);
+    border-radius: 9px;
+    position: relative;
+    cursor: pointer;
+    transition: color 0.18s ease;
+  }
+  .seg-quiet-item-active {
+    color: var(--accent-strong);
+    font-weight: 600;
+  }
+  .seg-quiet-item-active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 2px;
+    width: 20px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--accent-strong);
+  }
+  /* Tailwind preflight 把 svg 设为 display:block，会让「图标 + 文字」拆成两行；
+     这里覆盖回并排，保持与纯文字项同样的行高（≈38px），不缩热区。 */
+  .seg-quiet-item svg {
+    display: inline-block;
+    vertical-align: -3px;
+    margin-right: 3px;
+  }
+
   .chip {
     border-radius: 999px;
     padding: 8px 14px;
